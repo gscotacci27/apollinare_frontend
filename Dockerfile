@@ -13,6 +13,10 @@ COPY package*.json ./
 RUN npm ci
 
 COPY . .
+
+# Generate PWA icons (pure Python, no extra deps)
+RUN python3 scripts/generate_icons.py
+
 RUN npm run build
 
 # Stage 2 — server
