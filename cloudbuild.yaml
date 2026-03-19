@@ -13,7 +13,7 @@ steps:
       - '--build-arg'
       - 'VITE_GATEWAY_URL=$_GATEWAY_URL'
       - '-t'
-      - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_AR_REPO}/reply-scheduler-frontend:${COMMIT_SHA}'
+      - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_AR_REPO}/reply-scheduler-frontend:${SHORT_SHA}'
       - '-t'
       - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_AR_REPO}/reply-scheduler-frontend:latest'
       - '.'
@@ -30,10 +30,10 @@ steps:
       - 'run'
       - 'deploy'
       - 'frontend-reply-scheduler'
-      - '--image=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_AR_REPO}/reply-scheduler-frontend:${COMMIT_SHA}'
+      - '--image=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_AR_REPO}/reply-scheduler-frontend:${SHORT_SHA}'
       - '--region=${_REGION}'
       - '--no-allow-unauthenticated'
-      - '--ingress=load-balancer'
+      - '--ingress=all'
       - '--service-account=sa-frontend@${_PROJECT_ID}.iam.gserviceaccount.com'
       - '--min-instances=0'
       - '--max-instances=3'
@@ -48,3 +48,4 @@ substitutions:
 
 options:
   logging: CLOUD_LOGGING_ONLY
+  substitutionOption: ALLOW_LOOSE
