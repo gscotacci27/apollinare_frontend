@@ -1,23 +1,15 @@
 import { useState } from 'react'
 import { format } from 'date-fns'
 import { it } from 'date-fns/locale'
-import { CalendarDays, Users, MapPin, Loader2 } from 'lucide-react'
+import { Users, MapPin, Loader2, Plus } from 'lucide-react'
 import { TopBar } from '@/components/layout/TopBar'
 import { useEventi } from '@/hooks/useEventi'
-import { STATO_LABELS } from '@/types/gestionale'
+import { STATO_LABELS, STATI_FILTER } from '@/types/gestionale'
+import { NuovoEventoModal } from './NuovoEventoModal'
 import type { Evento } from '@/types/gestionale'
 
-const STATI = [
-  { value: undefined, label: 'Tutti' },
-  { value: 100, label: 'Preventivo' },
-  { value: 200, label: 'Confermato' },
-  { value: 300, label: 'In corso' },
-  { value: 350, label: 'Concluso' },
-  { value: 400, label: 'Annullato' },
-]
-
 function StatoBadge({ stato }: { stato: number }) {
-  const s = STATO_LABELS[stato] ?? { label: String(stato), color: 'text-slate-400 bg-slate-400/10' }
+  const s = STATO_LABELS[stato] ?? { label: String(stato), color: 'text-slate-400 bg-slate-100' }
   return (
     <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${s.color}`}>{s.label}</span>
   )
@@ -67,6 +59,7 @@ function EventoRow({ evento }: { evento: Evento }) {
 
 export const GestionalePage = () => {
   const [statoFilter, setStatoFilter] = useState<number | undefined>(undefined)
+  const [showNuovoEvento, setShowNuovoEvento] = useState(false)
   const { data: eventi = [], isLoading, isError } = useEventi(statoFilter)
 
   return (
@@ -75,24 +68,33 @@ export const GestionalePage = () => {
 
       {/* Filter bar */}
       <div className="px-6 py-3 border-b border-slate-200 bg-white flex items-center gap-2">
-        <CalendarDays className="w-4 h-4 text-slate-400 shrink-0" />
-        <span className="text-xs text-slate-400 mr-2">Stato:</span>
-        {STATI.map((s) => (
-          <button
-            key={String(s.value)}
-            onClick={() => setStatoFilter(s.value)}
-            className={`text-xs px-3 py-1 rounded-full transition-colors ${
-              statoFilter === s.value
-                ? 'bg-indigo-600 text-white'
-                : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-            }`}
-          >
-            {s.label}
-          </button>
-        ))}
+        <span className="text-xs text-slate-400 mr-1">Stato:</span>
+        <div className="flex items-center gap-1 flex-1 flex-wrap">
+          {STATI_FILTER.map((s) => (
+            <button
+              key={String(s.value)}
+              onClick={() => setStatoFilter(s.value)}
+              className={`text-xs px-3 py-1 rounded-full transition-colors ${
+                statoFilter === s.value
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+              }`}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+
+        <button
+          onClick={() => setShowNuovoEvento(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white text-xs rounded-lg hover:bg-indigo-700 transition-colors shrink-0"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          Nuovo evento
+        </button>
       </div>
 
-      {/* Content */}
+      {/* Table */}
       <div className="flex-1 overflow-auto bg-white">
         {isLoading ? (
           <div className="flex items-center justify-center h-full gap-2 text-slate-400 text-sm">
@@ -127,6 +129,8 @@ export const GestionalePage = () => {
           </table>
         )}
       </div>
+
+      {showNuovoEvento && <NuovoEventoModal onClose={() => setShowNuovoEvento(false)} />}
     </div>
   )
 }
