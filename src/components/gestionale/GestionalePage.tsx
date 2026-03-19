@@ -6,6 +6,7 @@ import { TopBar } from '@/components/layout/TopBar'
 import { useEventi } from '@/hooks/useEventi'
 import { STATO_LABELS, STATI_FILTER } from '@/types/gestionale'
 import { NuovoEventoModal } from './NuovoEventoModal'
+import { EventoPanel } from './EventoPanel'
 import type { Evento } from '@/types/gestionale'
 
 function StatoBadge({ stato }: { stato: number }) {
@@ -15,13 +16,16 @@ function StatoBadge({ stato }: { stato: number }) {
   )
 }
 
-function EventoRow({ evento }: { evento: Evento }) {
+function EventoRow({ evento, onClick }: { evento: Evento; onClick: () => void }) {
   const dataStr = evento.data
     ? format(new Date(evento.data), 'd MMM yyyy', { locale: it })
     : '—'
 
   return (
-    <tr className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+    <tr
+      className="border-b border-slate-100 hover:bg-indigo-50 transition-colors cursor-pointer"
+      onClick={onClick}
+    >
       <td className="px-4 py-3 text-sm text-slate-500 whitespace-nowrap">{dataStr}</td>
       <td className="px-4 py-3">
         <div className="text-sm font-medium text-slate-800">{evento.cliente ?? '—'}</div>
@@ -60,6 +64,7 @@ function EventoRow({ evento }: { evento: Evento }) {
 export const GestionalePage = () => {
   const [statoFilter, setStatoFilter] = useState<number | undefined>(undefined)
   const [showNuovoEvento, setShowNuovoEvento] = useState(false)
+  const [selectedId, setSelectedId] = useState<number | null>(null)
   const { data: eventi = [], isLoading, isError } = useEventi(statoFilter)
 
   return (
@@ -123,7 +128,7 @@ export const GestionalePage = () => {
             </thead>
             <tbody>
               {eventi.map((e) => (
-                <EventoRow key={e.id} evento={e} />
+                <EventoRow key={e.id} evento={e} onClick={() => setSelectedId(e.id)} />
               ))}
             </tbody>
           </table>
@@ -131,6 +136,9 @@ export const GestionalePage = () => {
       </div>
 
       {showNuovoEvento && <NuovoEventoModal onClose={() => setShowNuovoEvento(false)} />}
+      {selectedId != null && (
+        <EventoPanel idEvento={selectedId} onClose={() => setSelectedId(null)} />
+      )}
     </div>
   )
 }
