@@ -16,6 +16,11 @@ const PendingEmailsPage = lazy(() =>
     default: m.PendingEmailsPage,
   })),
 )
+const GestionalePage = lazy(() =>
+  import('@/components/gestionale/GestionalePage').then((m) => ({
+    default: m.GestionalePage,
+  })),
+)
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -44,6 +49,7 @@ function AppRoutes() {
           <Route index element={<Navigate to="/emails" replace />} />
           <Route path="chatbot" element={<ChatbotPage />} />
           <Route path="emails" element={<PendingEmailsPage />} />
+          <Route path="gestionale" element={<GestionalePage />} />
         </Route>
       </Routes>
     </Suspense>

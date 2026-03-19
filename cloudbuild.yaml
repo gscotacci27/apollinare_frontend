@@ -14,6 +14,8 @@ steps:
       - 'VITE_GATEWAY_URL=$_GATEWAY_URL'
       - '--build-arg'
       - 'VITE_GOOGLE_CLIENT_ID=$_GOOGLE_CLIENT_ID'
+      - '--build-arg'
+      - 'VITE_GESTIONALE_URL=$_GESTIONALE_URL'
       - '-t'
       - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_AR_REPO}/reply-scheduler-frontend:${SHORT_SHA}'
       - '-t'
@@ -47,6 +49,7 @@ substitutions:
   _REGION: europe-west8
   _GATEWAY_URL: ''
   _GOOGLE_CLIENT_ID: ''
+  _GESTIONALE_URL: ''
   _AR_REPO: apollinare
 
 options:

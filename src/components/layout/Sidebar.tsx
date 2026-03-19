@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { MessageSquare, Mail, LogOut } from 'lucide-react'
+import { MessageSquare, Mail, LogOut, ClipboardList } from 'lucide-react'
 import { useEmails } from '@/hooks/useEmails'
 import { useAuth } from '@/contexts/AuthContext'
 
@@ -51,6 +51,20 @@ export const Sidebar = () => {
               {pendingCount}
             </span>
           )}
+        </NavLink>
+
+        <NavLink
+          to="/gestionale"
+          className={({ isActive }) =>
+            `flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
+              isActive
+                ? 'bg-white/5 text-white border-l-2 border-indigo-500 pl-[10px]'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+            }`
+          }
+        >
+          <ClipboardList className="w-4 h-4 shrink-0" />
+          <span className="flex-1">Gestionale</span>
         </NavLink>
       </nav>
 
