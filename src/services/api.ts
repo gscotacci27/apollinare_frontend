@@ -21,6 +21,7 @@ api.interceptors.response.use(
 
 export const getPendingEmails = async (): Promise<Email[]> => {
   const { data } = await api.get<Email[]>('/emails/pending')
+  if (!Array.isArray(data)) return []
   return data
 }
 

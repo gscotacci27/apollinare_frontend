@@ -7,5 +7,6 @@ export const useEmails = () => {
     queryKey: queryKeys.emails.pending(),
     queryFn: getPendingEmails,
     refetchInterval: 30_000,
+    select: (data) => (Array.isArray(data) ? data : []),
   })
 }
