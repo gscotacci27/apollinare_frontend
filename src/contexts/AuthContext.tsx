@@ -1,7 +1,10 @@
 import { createContext, useContext, useState, useCallback, ReactNode } from 'react'
 import { googleLogout } from '@react-oauth/google'
 
-const ALLOWED_EMAIL = 'info@apollinarecatering.it'
+const ALLOWED_EMAILS = new Set([
+  'info@apollinarecatering.it',
+  'apollinare.test@gmail.com',
+])
 const STORAGE_KEY = 'apollinare_user'
 
 interface User {
@@ -37,7 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const payload = decodeJwt(credential)
     const email = payload.email as string
 
-    if (email !== ALLOWED_EMAIL) return false
+    if (!ALLOWED_EMAILS.has(email)) return false
 
     const u: User = {
       email,
