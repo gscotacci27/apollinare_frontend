@@ -1,0 +1,50 @@
+steps:
+  - name: 'node:20-alpine'
+    entrypoint: npm
+    args: ['ci']
+
+  - name: 'node:20-alpine'
+    entrypoint: npx
+    args: ['tsc', '--noEmit']
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '--build-arg'
+      - 'VITE_GATEWAY_URL=$_GATEWAY_URL'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_AR_REPO}/reply-scheduler-frontend:${COMMIT_SHA}'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_AR_REPO}/reply-scheduler-frontend:latest'
+      - '.'
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - '--all-tags'
+      - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_AR_REPO}/reply-scheduler-frontend'
+
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'frontend-reply-scheduler'
+      - '--image=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_AR_REPO}/reply-scheduler-frontend:${COMMIT_SHA}'
+      - '--region=${_REGION}'
+      - '--no-allow-unauthenticated'
+      - '--ingress=load-balancer'
+      - '--service-account=sa-frontend@${_PROJECT_ID}.iam.gserviceaccount.com'
+      - '--min-instances=0'
+      - '--max-instances=3'
+      - '--memory=256Mi'
+      - '--port=8080'
+
+substitutions:
+  _PROJECT_ID: project-fac564f6-0087-4fc3-a53
+  _REGION: europe-west8
+  _GATEWAY_URL: ''
+  _AR_REPO: apollinare
+
+options:
+  logging: CLOUD_LOGGING_ONLY
