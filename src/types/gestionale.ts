@@ -9,6 +9,7 @@ export interface Evento {
   data: string | null
   stato: number
   tot_ospiti: number | null
+  id_location: number | null
   location: string | null
   tipo_pasto: string | null
   descrizione_tipo: string | null
