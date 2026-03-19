@@ -1,5 +1,5 @@
 # Stage 1 — builder
-FROM node:20-slim AS builder
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
@@ -16,9 +16,6 @@ COPY package*.json ./
 RUN npm ci
 
 COPY . .
-
-# Generate PWA icons (pure Python, no extra deps)
-RUN python3 scripts/generate_icons.py
 
 RUN npm run build
 
