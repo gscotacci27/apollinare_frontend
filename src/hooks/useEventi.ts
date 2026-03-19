@@ -3,9 +3,9 @@ import { getEventi } from '@/services/gestionale'
 
 export const useEventi = (stato?: number) =>
   useQuery({
-    queryKey: ['eventi', stato],
-    queryFn: () => getEventi(stato !== undefined ? { stato } : undefined),
-    staleTime: 0,
+    queryKey: ['eventi'],
+    queryFn: () => getEventi(),
+    staleTime: 5 * 60_000,
     select: stato !== undefined
       ? (data) => data.filter(e => e.stato === stato)
       : undefined,
