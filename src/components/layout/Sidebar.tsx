@@ -1,9 +1,11 @@
 import { NavLink } from 'react-router-dom'
-import { MessageSquare, Mail } from 'lucide-react'
+import { MessageSquare, Mail, LogOut } from 'lucide-react'
 import { useEmails } from '@/hooks/useEmails'
+import { useAuth } from '@/contexts/AuthContext'
 
 export const Sidebar = () => {
   const { data: emails } = useEmails()
+  const { user, logout } = useAuth()
   const pendingCount = emails?.length ?? 0
 
   return (
@@ -52,9 +54,25 @@ export const Sidebar = () => {
         </NavLink>
       </nav>
 
-      {/* Version */}
-      <div className="px-4 py-3 border-t border-slate-800">
-        <span className="text-xs text-slate-600">v0.1.0</span>
+      {/* User + logout */}
+      <div className="px-3 py-3 border-t border-slate-800 space-y-2">
+        {user && (
+          <div className="flex items-center gap-2 px-1">
+            {user.picture ? (
+              <img src={user.picture} alt="" className="w-6 h-6 rounded-full shrink-0" />
+            ) : (
+              <div className="w-6 h-6 rounded-full bg-indigo-600 shrink-0" />
+            )}
+            <span className="text-xs text-slate-400 truncate flex-1">{user.name}</span>
+          </div>
+        )}
+        <button
+          onClick={logout}
+          className="flex w-full items-center gap-2 px-3 py-1.5 rounded-md text-xs text-slate-500 hover:text-slate-300 hover:bg-white/5 transition-colors"
+        >
+          <LogOut className="w-3.5 h-3.5 shrink-0" />
+          Esci
+        </button>
       </div>
     </aside>
   )
