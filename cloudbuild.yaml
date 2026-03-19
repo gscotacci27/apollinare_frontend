@@ -34,7 +34,7 @@ steps:
       - 'frontend-reply-scheduler'
       - '--image=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_AR_REPO}/reply-scheduler-frontend:${SHORT_SHA}'
       - '--region=${_REGION}'
-      - '--no-allow-unauthenticated'
+      - '--allow-unauthenticated'
       - '--ingress=all'
       - '--service-account=sa-frontend@${_PROJECT_ID}.iam.gserviceaccount.com'
       - '--min-instances=0'
