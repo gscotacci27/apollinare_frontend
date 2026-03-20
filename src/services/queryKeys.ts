@@ -12,8 +12,12 @@ export const queryKeys = {
     list: (filters: GetEventiParams) => [...queryKeys.eventi.all, 'list', filters] as const,
     detail: (id: number) => [...queryKeys.eventi.all, 'detail', id] as const,
   },
+  lista: {
+    byEvento: (id: number) => ['lista', id] as const,
+  },
   lookup: {
     location: ['lookup', 'location'] as const,
     tipiEvento: ['lookup', 'tipi-evento'] as const,
+    articoli: ['lookup', 'articoli'] as const,
   },
 }

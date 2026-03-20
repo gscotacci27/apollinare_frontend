@@ -31,6 +31,11 @@ const LocationiPage = lazy(() =>
     default: m.LocationiPage,
   })),
 )
+const ListaCaricaPage = lazy(() =>
+  import('@/components/gestionale/ListaCaricaPage').then((m) => ({
+    default: m.ListaCaricaPage,
+  })),
+)
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -63,6 +68,7 @@ function AppRoutes() {
           <Route path="gestionale" element={<GestionalePage />} />
           <Route path="gestionale/eventi/:id" element={<EventoDetailPage />} />
           <Route path="gestionale/location" element={<LocationiPage />} />
+          <Route path="gestionale/eventi/:id/lista-carico" element={<ListaCaricaPage />} />
         </Route>
       </Routes>
     </Suspense>

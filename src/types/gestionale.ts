@@ -61,6 +61,44 @@ export interface TipoEventoItem {
   tipo_pasto: string | null
 }
 
+// ── SF-002 Lista di Carico ────────────────────────────────────────────────────
+
+export interface ListaCaricaItem {
+  id: number
+  cod_articolo: string
+  descrizione: string | null
+  qta: number
+  qta_ape: number
+  qta_sedu: number
+  qta_bufdol: number
+  qta_man_ape: number
+  qta_man_sedu: number
+  qta_man_bufdol: number
+  note: string | null
+  ordine: number
+}
+
+export interface ArticoloLookupItem {
+  cod_articolo: string
+  descrizione: string | null
+  qta_giac: number | null
+}
+
+export interface AddArticoloBody {
+  cod_articolo: string
+  qta_man_ape?: number
+  qta_man_sedu?: number
+  qta_man_bufdol?: number
+  note?: string | null
+}
+
+export interface UpdateListaItemBody {
+  qta_man_ape: number
+  qta_man_sedu: number
+  qta_man_bufdol: number
+  note: string | null
+}
+
 // ── Tipi legacy (usati da altri moduli, non SF-001) ───────────────────────────
 
 export interface OspitiItem {
