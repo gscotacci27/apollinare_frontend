@@ -60,6 +60,9 @@ export const FILTRI_STATO = [
   { value: 400,       label: 'Confermato' },
 ] as const
 
+// Valore speciale per il filtro "storico" (passati)
+export const FILTRO_PASSATI = 'passati' as const
+
 // ── Lookup ────────────────────────────────────────────────────────────────────
 
 export interface LocationItem {
@@ -158,11 +161,25 @@ export interface AccontoItem {
   ordine: number
 }
 
+export interface DegustazioneItem {
+  id: number
+  data: string | null
+  nome: string | null
+  n_persone: number
+  costo_degustazione: number
+  detraibile: number
+  consumata: number
+  note: string | null
+}
+
 export interface PreventivoCalc {
   ospiti_subtotale: number
   articoli_subtotale: number
   extra_subtotale: number
+  degustazioni_detraibili: number
+  sconto_totale: number
   totale_netto: number
+  totale_manuale: number | null
   acconti_totale: number
   saldo: number
 }
@@ -171,6 +188,7 @@ export interface SchedaResponse {
   ospiti: OspiteItem[]
   extra: ExtraItem[]
   acconti: AccontoItem[]
+  degustazioni: DegustazioneItem[]
   preventivo: PreventivoCalc
 }
 

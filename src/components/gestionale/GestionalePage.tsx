@@ -20,13 +20,17 @@ export const GestionalePage = () => {
   const dataDa        = searchParams.get('data_da')    ?? undefined
   const dataA         = searchParams.get('data_a')     ?? undefined
   const idLocation    = searchParams.get('id_location') ? Number(searchParams.get('id_location')) : undefined
+  const isPassati     = searchParams.get('passati') === '1'
 
   const hasActiveFilters = !!(dataDa || dataA || idLocation)
 
+  // Per "Storico passati": data_a = ieri, stato = 400 (Confermato)
+  const today = new Date().toISOString().slice(0, 10)
+
   const { data: eventi = [], isLoading, isError } = useEventi({
-    stato:       statoFilter,
-    data_da:     dataDa,
-    data_a:      dataA,
+    stato:       isPassati ? 400 : statoFilter,
+    data_da:     isPassati ? undefined : dataDa,
+    data_a:      isPassati ? today : dataA,
     id_location: idLocation,
   })
 
@@ -118,9 +122,16 @@ export const GestionalePage = () => {
         {FILTRI_STATO.map((f) => (
           <button
             key={String(f.value)}
-            onClick={() => setParam('stato', f.value !== undefined ? String(f.value) : undefined)}
+            onClick={() => {
+              setSearchParams((p) => {
+                p.delete('passati')
+                if (f.value !== undefined) p.set('stato', String(f.value))
+                else p.delete('stato')
+                return p
+              })
+            }}
             className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
-              statoFilter === f.value
+              !isPassati && statoFilter === f.value
                 ? 'bg-indigo-600 text-white'
                 : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200'
             }`}
@@ -128,6 +139,23 @@ export const GestionalePage = () => {
             {f.label}
           </button>
         ))}
+        <div className="w-px h-4 bg-slate-700 mx-1 shrink-0" />
+        <button
+          onClick={() => {
+            setSearchParams((p) => {
+              if (isPassati) p.delete('passati')
+              else { p.set('passati', '1'); p.delete('stato') }
+              return p
+            })
+          }}
+          className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+            isPassati
+              ? 'bg-slate-600 text-white'
+              : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200'
+          }`}
+        >
+          Storico
+        </button>
       </div>
 
       {/* Filtri avanzati (data + location) */}

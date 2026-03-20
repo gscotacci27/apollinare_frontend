@@ -2,7 +2,7 @@ import axios from 'axios'
 import type {
   EventoResponse, EventoCreate, LocationItem, TipoEventoItem,
   ListaCaricaItem, ArticoloLookupItem, SezioneItem, AddArticoloBody, UpdateListaItemBody,
-  PatchEventoBody, SchedaResponse, ExtraItem, AccontoItem,
+  PatchEventoBody, SchedaResponse, ExtraItem, AccontoItem, DegustazioneItem,
 } from '@/types/gestionale'
 
 const gestionale = axios.create({
@@ -141,6 +141,26 @@ export const addAcconto = async (
 
 export const deleteAcconto = async (idEvento: number, id: number): Promise<void> => {
   await gestionale.delete(`/eventi/${idEvento}/scheda/acconti/${id}`)
+}
+
+export const addDegustazione = async (
+  idEvento: number,
+  body: { data?: string | null; nome?: string | null; n_persone?: number; costo_degustazione?: number; detraibile?: number; note?: string | null },
+): Promise<DegustazioneItem> => {
+  const { data } = await gestionale.post<DegustazioneItem>(`/eventi/${idEvento}/scheda/degustazioni`, body)
+  return data
+}
+
+export const deleteDegustazione = async (idEvento: number, id: number): Promise<void> => {
+  await gestionale.delete(`/eventi/${idEvento}/scheda/degustazioni/${id}`)
+}
+
+export const updateSconto = async (idEvento: number, sconto_totale: number): Promise<void> => {
+  await gestionale.patch(`/eventi/${idEvento}/scheda/sconto`, { sconto_totale })
+}
+
+export const updateTotaleManuale = async (idEvento: number, totale_manuale: number | null): Promise<void> => {
+  await gestionale.patch(`/eventi/${idEvento}/scheda/totale-manuale`, { totale_manuale })
 }
 
 export const salvaScheda = async (idEvento: number): Promise<{ saved: boolean }> => {
