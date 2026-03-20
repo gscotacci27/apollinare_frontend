@@ -1,11 +1,19 @@
 import { NavLink } from 'react-router-dom'
-import { MessageSquare, Mail, LogOut, ClipboardList, MapPin } from 'lucide-react'
+import { MessageSquare, Mail, LogOut, ClipboardList, MapPin, Moon, Sun, Palette } from 'lucide-react'
 import { useEmails } from '@/hooks/useEmails'
 import { useAuth } from '@/contexts/AuthContext'
+import { useTheme, type Theme } from '@/contexts/ThemeContext'
+
+const THEME_META: Record<Theme, { icon: React.ReactNode; label: string; next: string }> = {
+  dark:  { icon: <Moon className="w-3.5 h-3.5" />,    label: 'Scuro',    next: '→ Chiaro' },
+  light: { icon: <Sun className="w-3.5 h-3.5" />,     label: 'Chiaro',   next: '→ Colorato' },
+  warm:  { icon: <Palette className="w-3.5 h-3.5" />, label: 'Colorato', next: '→ Scuro' },
+}
 
 export const Sidebar = () => {
   const { data: emails } = useEmails()
   const { user, logout } = useAuth()
+  const { theme, cycleTheme } = useTheme()
   const pendingCount = emails?.length ?? 0
 
   return (
@@ -82,6 +90,19 @@ export const Sidebar = () => {
           <span className="flex-1">Location</span>
         </NavLink>
       </nav>
+
+      {/* Theme toggle */}
+      <div className="px-3 pb-2">
+        <button
+          onClick={cycleTheme}
+          title={`Tema attuale: ${THEME_META[theme].label} — clicca per ${THEME_META[theme].next}`}
+          className="flex w-full items-center gap-2 px-3 py-1.5 rounded-md text-xs text-slate-500 hover:text-slate-300 hover:bg-white/5 transition-colors"
+        >
+          {THEME_META[theme].icon}
+          <span className="flex-1 text-left">{THEME_META[theme].label}</span>
+          <span className="text-slate-600 text-[10px]">{THEME_META[theme].next}</span>
+        </button>
+      </div>
 
       {/* User + logout */}
       <div className="px-3 py-3 border-t border-slate-800 space-y-2">

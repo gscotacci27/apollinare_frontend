@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from 'react-hot-toast'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import { AuthProvider, useAuth } from '@/contexts/AuthContext'
+import { ThemeProvider } from '@/contexts/ThemeContext'
 import { LoginPage } from '@/components/auth/LoginPage'
 import { Layout } from '@/components/layout/Layout'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
@@ -84,6 +85,7 @@ function AppRoutes() {
 export default function App() {
   return (
     <ErrorBoundary>
+      <ThemeProvider>
       <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
@@ -103,6 +105,7 @@ export default function App() {
           </AuthProvider>
         </QueryClientProvider>
       </GoogleOAuthProvider>
+      </ThemeProvider>
     </ErrorBoundary>
   )
 }
