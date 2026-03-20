@@ -24,6 +24,8 @@ export const useUpdateArticolo = (idEvento: number, onSuccess?: () => void) => {
               qta_man_sedu: body.qta_man_sedu,
               qta_man_bufdol: body.qta_man_bufdol,
               note: body.note,
+              colore: body.colore,
+              dimensioni: body.dimensioni,
             }
           }),
       )

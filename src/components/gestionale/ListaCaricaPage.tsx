@@ -1,27 +1,32 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, Loader2, PackageX, Pencil, Trash2, X, Check,
-  Plus, Users, Save, ChevronDown,
+  Plus, Users, Save, ChevronDown, AlertTriangle,
 } from 'lucide-react'
-import { useQuery } from '@tanstack/react-query'
-import { getEvento } from '@/services/gestionale'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { getEvento, updateArticolo } from '@/services/gestionale'
 import { queryKeys } from '@/services/queryKeys'
 import { useListaCarico } from '@/hooks/useListaCarico'
 import { useAddArticolo } from '@/hooks/useAddArticolo'
-import { useUpdateArticolo } from '@/hooks/useUpdateArticolo'
 import { useDeleteArticolo } from '@/hooks/useDeleteArticolo'
 import { useLookupArticoli } from '@/hooks/useLookupArticoli'
 import { useLookupSezioni } from '@/hooks/useLookupSezioni'
 import { usePatchEvento } from '@/hooks/usePatchEvento'
 import { ArticoloCombobox } from './ArticoloCombobox'
 import type { ListaCaricaItem, ArticoloLookupItem, UpdateListaItemBody } from '@/types/gestionale'
+import toast from 'react-hot-toast'
 
-// ── Helpers ────────────────────────────────────────────────────────────────────
+// ── Costanti ───────────────────────────────────────────────────────────────────
 
 const COD_ARTICOLO_GENERICO = 'gen-buf'
 
-const cleanLabel = (s: string) => s.replace(/^\?+\s*/, '').replace(/^\^\^+\s*/, '')
+// ── Helpers ────────────────────────────────────────────────────────────────────
+
+const cleanLabel = (s: string) => s.replace(/^\?+\s*/, '').replace(/^\^\^+\s*/, '').replace(/^\*+\s*/, '')
+
+// Tipo per le modifiche in bozza (tutte opzionali)
+type DraftChanges = Partial<UpdateListaItemBody>
 
 const QtaCell = ({ auto, manual }: { auto: number; manual: number }) => {
   const v = auto + manual
@@ -88,8 +93,7 @@ const ParametriPanel = ({
           className="w-16 bg-slate-800 border border-slate-600 rounded px-2 py-1 text-sm text-slate-100 text-center focus:outline-none focus:border-indigo-500"
         />
       </div>
-      <button onClick={() => mutate({ tot_ospiti: ospiti, perc_sedute_aper: perc })}
-        disabled={isPending}
+      <button onClick={() => mutate({ tot_ospiti: ospiti, perc_sedute_aper: perc })} disabled={isPending}
         className="p-1.5 rounded text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-50 transition-colors">
         {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
       </button>
@@ -101,40 +105,32 @@ const ParametriPanel = ({
   )
 }
 
-// ── Edit inline ────────────────────────────────────────────────────────────────
+// ── Edit inline (draft) ────────────────────────────────────────────────────────
 
-const EditRow = ({
-  item, idEvento, onCancel,
-}: { item: ListaCaricaItem; idEvento: number; onCancel: () => void }) => {
-  const [baseApe,  setBaseApe]  = useState(item.qta_ape)
-  const [baseSedu, setBaseSedu] = useState(item.qta_sedu)
-  const [baseBuf,  setBaseBuf]  = useState(item.qta_bufdol)
-  const [manApe,   setManApe]   = useState(item.qta_man_ape)
-  const [manSedu,  setManSedu]  = useState(item.qta_man_sedu)
-  const [manBuf,   setManBuf]   = useState(item.qta_man_bufdol)
-  const [note, setNote]         = useState(item.note ?? '')
-  const { mutate, isPending }   = useUpdateArticolo(idEvento, onCancel)
+interface EditRowProps {
+  item: ListaCaricaItem
+  draft: DraftChanges
+  onDraftChange: (changes: DraftChanges) => void
+  onClose: () => void
+}
 
+const EditRow = ({ item, draft, onDraftChange, onClose }: EditRowProps) => {
   const isGenerico = item.cod_articolo === COD_ARTICOLO_GENERICO
 
-  const save = () => mutate({
-    itemId: item.id,
-    body: {
-      qta_ape:        baseApe  !== item.qta_ape    ? baseApe  : undefined,
-      qta_sedu:       baseSedu !== item.qta_sedu   ? baseSedu : undefined,
-      qta_bufdol:     baseBuf  !== item.qta_bufdol ? baseBuf  : undefined,
-      qta_man_ape:    manApe,
-      qta_man_sedu:   manSedu,
-      qta_man_bufdol: manBuf,
-      note: note.trim() || null,
-    } satisfies UpdateListaItemBody,
-  })
+  // Valori correnti = draft se presente, altrimenti item originale
+  const v = (key: keyof DraftChanges) =>
+    key in draft ? draft[key] : (item as unknown as Record<string, unknown>)[key]
 
-  const numInput = (val: number, set: (v: number) => void, lbl: string, accent = false) => (
+  const set = (key: keyof DraftChanges, val: unknown) =>
+    onDraftChange({ ...draft, [key]: val })
+
+  const numInput = (key: keyof UpdateListaItemBody, lbl: string, accent = false) => (
     <div className="flex flex-col items-center gap-0.5">
       <span className={`text-xs ${accent ? 'text-indigo-400' : 'text-slate-500'}`}>{lbl}</span>
-      <input type="number" min={0} step={1} value={val}
-        onChange={(e) => set(Number(e.target.value))}
+      <input
+        type="number" min={0} step={1}
+        value={(v(key) as number) ?? 0}
+        onChange={(e) => set(key, Number(e.target.value))}
         className={`w-14 bg-slate-800 border rounded px-1 py-1 text-sm text-slate-100 text-center focus:outline-none ${
           accent ? 'border-indigo-700 focus:border-indigo-400' : 'border-slate-600 focus:border-indigo-500'
         }`}
@@ -142,53 +138,55 @@ const EditRow = ({
     </div>
   )
 
+  const txtInput = (key: keyof UpdateListaItemBody, placeholder: string) => (
+    <div className="flex flex-col gap-0.5 flex-1 min-w-24">
+      <span className="text-xs text-slate-500">{placeholder}</span>
+      <input
+        type="text"
+        value={(v(key) as string) ?? ''}
+        onChange={(e) => set(key, e.target.value || null)}
+        placeholder={`${placeholder}…`}
+        className="bg-slate-800 border border-slate-600 rounded px-2 py-1 text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
+      />
+    </div>
+  )
+
   return (
     <tr className="bg-indigo-950/30 border-b border-slate-700/50">
-      <td className="px-4 py-2.5 text-sm">
+      <td className="px-4 py-3 text-sm">
         <p className="text-slate-300 font-medium">
-          {isGenerico ? (item.note ?? 'Voce personalizzata') : (item.descrizione ?? item.cod_articolo)}
+          {isGenerico ? ((v('note') as string) ?? item.note ?? 'Voce personalizzata') : (item.descrizione ?? item.cod_articolo)}
         </p>
         {!isGenerico && <p className="text-xs text-slate-500">{item.cod_articolo}</p>}
       </td>
-      <td className="px-2 py-2.5" colSpan={3}>
+      <td className="px-2 py-3" colSpan={4}>
         <div className="flex items-end gap-2 flex-wrap">
           {!isGenerico && (
             <>
               <div className="flex items-end gap-1">
-                {numInput(baseApe,  setBaseApe,  'Ape')}
-                {numInput(manApe,   setManApe,   '+Ape', true)}
+                {numInput('qta_ape',   'Ape')}
+                {numInput('qta_man_ape',  '+Ape',  true)}
               </div>
               <div className="flex items-end gap-1">
-                {numInput(baseSedu, setBaseSedu, 'Sedu')}
-                {numInput(manSedu,  setManSedu,  '+Sedu', true)}
+                {numInput('qta_sedu',  'Sedu')}
+                {numInput('qta_man_sedu', '+Sedu', true)}
               </div>
               <div className="flex items-end gap-1">
-                {numInput(baseBuf,  setBaseBuf,  'Buf')}
-                {numInput(manBuf,   setManBuf,   '+Buf', true)}
+                {numInput('qta_bufdol','Buf')}
+                {numInput('qta_man_bufdol','+Buf', true)}
               </div>
+              {txtInput('colore',     'Colore')}
+              {txtInput('dimensioni', 'Dimensioni')}
             </>
           )}
-          <div className="flex flex-col gap-0.5 flex-1 min-w-32">
-            <span className="text-xs text-slate-500">Note</span>
-            <input type="text" value={note} onChange={(e) => setNote(e.target.value)}
-              placeholder={isGenerico ? 'Descrivi la richiesta…' : 'Note…'}
-              autoFocus={isGenerico}
-              className="bg-slate-800 border border-slate-600 rounded px-2 py-1 text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
-            />
-          </div>
+          {txtInput('note', isGenerico ? 'Descrizione' : 'Note')}
         </div>
       </td>
-      <td className="px-3 py-2.5">
-        <div className="flex items-center gap-1">
-          <button onClick={save} disabled={isPending}
-            className="p-1.5 rounded text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-50 transition-colors">
-            {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-          </button>
-          <button onClick={onCancel}
-            className="p-1.5 rounded text-slate-500 hover:bg-slate-700 transition-colors">
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
+      <td className="px-3 py-3">
+        <button onClick={onClose}
+          className="p-1.5 rounded text-slate-500 hover:bg-slate-700 transition-colors">
+          <X className="w-3.5 h-3.5" />
+        </button>
       </td>
     </tr>
   )
@@ -196,39 +194,70 @@ const EditRow = ({
 
 // ── Riga articolo ──────────────────────────────────────────────────────────────
 
-const ItemRow = ({
-  item, idEvento, onEdit,
-}: { item: ListaCaricaItem; idEvento: number; onEdit: () => void }) => {
+interface ItemRowProps {
+  item: ListaCaricaItem
+  draft: DraftChanges | undefined
+  idEvento: number
+  onEdit: () => void
+}
+
+const ItemRow = ({ item, draft, idEvento, onEdit }: ItemRowProps) => {
   const [confirmDel, setConfirmDel] = useState(false)
   const { mutate: doDelete, isPending } = useDeleteArticolo(idEvento)
 
   const isGenerico = item.cod_articolo === COD_ARTICOLO_GENERICO
-  const label = isGenerico
-    ? (item.note ?? 'Voce personalizzata')
+  const hasDraft = draft !== undefined && Object.keys(draft).length > 0
+
+  // Valori da mostrare: draft ha la precedenza sull'originale
+  const apeAuto  = (draft?.qta_ape   ?? item.qta_ape)
+  const seduAuto = (draft?.qta_sedu  ?? item.qta_sedu)
+  const bufAuto  = (draft?.qta_bufdol ?? item.qta_bufdol)
+  const apeMon   = (draft?.qta_man_ape   ?? item.qta_man_ape)
+  const seduMan  = (draft?.qta_man_sedu  ?? item.qta_man_sedu)
+  const bufMan   = (draft?.qta_man_bufdol ?? item.qta_man_bufdol)
+  const nota     = 'note' in (draft ?? {}) ? draft!.note : item.note
+  const label    = isGenerico
+    ? (('note' in (draft ?? {})) ? (draft!.note ?? 'Voce personalizzata') : (item.note ?? 'Voce personalizzata'))
     : (item.descrizione ?? item.cod_articolo)
 
   return (
-    <tr className="border-b border-slate-800/40 hover:bg-slate-900/30 group transition-colors">
+    <tr className={`border-b border-slate-800/40 hover:bg-slate-900/30 group transition-colors ${hasDraft ? 'bg-amber-950/10' : ''}`}>
       <td className="px-4 py-2.5 text-sm">
-        <p className="text-slate-200 truncate max-w-xs">{label}</p>
-        {!isGenerico && <p className="text-xs text-slate-600">{item.cod_articolo}</p>}
-        {item.tipo_descrizione && (
-          <p className="text-xs text-slate-700">{cleanLabel(item.tipo_descrizione)}</p>
+        <div className="flex items-center gap-1.5">
+          {hasDraft && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" title="Modifiche non salvate" />}
+          <div>
+            <p className="text-slate-200 truncate max-w-xs">{label}</p>
+            {!isGenerico && <p className="text-xs text-slate-600">{item.cod_articolo}</p>}
+          </div>
+        </div>
+      </td>
+      <td className="px-3 py-2.5 text-sm text-center w-20">
+        {isGenerico ? <span className="text-slate-700">—</span> : <QtaCell auto={apeAuto} manual={apeMon} />}
+      </td>
+      <td className="px-3 py-2.5 text-sm text-center w-20">
+        {isGenerico ? <span className="text-slate-700">—</span> : <QtaCell auto={seduAuto} manual={seduMan} />}
+      </td>
+      <td className="px-3 py-2.5 text-sm text-center w-20">
+        {isGenerico ? <span className="text-slate-700">—</span> : <QtaCell auto={bufAuto} manual={bufMan} />}
+      </td>
+      <td className="px-3 py-2.5 text-xs text-slate-500 max-w-[200px]">
+        {isGenerico ? (
+          <span className="text-slate-600 italic">voce libera</span>
+        ) : (
+          <div className="space-y-0.5">
+            {nota && <p className="truncate">{nota}</p>}
+            {(draft?.colore ?? item.colore) && (
+              <p className="truncate text-slate-600">
+                <span className="text-slate-700">Colore:</span> {draft?.colore ?? item.colore}
+              </p>
+            )}
+            {(draft?.dimensioni ?? item.dimensioni) && (
+              <p className="truncate text-slate-600">
+                <span className="text-slate-700">Dim:</span> {draft?.dimensioni ?? item.dimensioni}
+              </p>
+            )}
+          </div>
         )}
-      </td>
-      <td className="px-3 py-2.5 text-sm text-center w-20">
-        {isGenerico ? <span className="text-slate-700">—</span> : <QtaCell auto={item.qta_ape} manual={item.qta_man_ape} />}
-      </td>
-      <td className="px-3 py-2.5 text-sm text-center w-20">
-        {isGenerico ? <span className="text-slate-700">—</span> : <QtaCell auto={item.qta_sedu} manual={item.qta_man_sedu} />}
-      </td>
-      <td className="px-3 py-2.5 text-sm text-center w-20">
-        {isGenerico ? <span className="text-slate-700">—</span> : <QtaCell auto={item.qta_bufdol} manual={item.qta_man_bufdol} />}
-      </td>
-      <td className="px-3 py-2.5 text-xs text-slate-500 max-w-[140px]">
-        {isGenerico
-          ? <span className="text-slate-600 italic">voce libera</span>
-          : <span className="truncate block">{item.note ?? ''}</span>}
       </td>
       <td className="px-3 py-2.5 w-20">
         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -268,34 +297,112 @@ interface AggiuntaPanelProps {
   sezioni: { cod_tipo: string; descrizione: string; cod_step: number }[]
 }
 
+// Form conferma aggiunta (quantità + note)
+interface AddConfirmProps {
+  label: string
+  codArticolo: string
+  idEvento: number
+  onConfirm: (body: { cod_articolo: string; qta_man_ape?: number; qta_man_sedu?: number; qta_man_bufdol?: number; note?: string }) => void
+  onCancel: () => void
+  isPending: boolean
+}
+
+const AddConfirmForm = ({ label, codArticolo, onConfirm, onCancel, isPending }: AddConfirmProps) => {
+  const isGenerico = codArticolo === COD_ARTICOLO_GENERICO
+  const [manApe,  setManApe]  = useState(0)
+  const [manSedu, setManSedu] = useState(0)
+  const [manBuf,  setManBuf]  = useState(0)
+  const [nota,    setNota]    = useState('')
+
+  const submit = () => {
+    if (isGenerico && !nota.trim()) return
+    onConfirm({
+      cod_articolo: codArticolo,
+      qta_man_ape:    manApe  > 0 ? manApe  : undefined,
+      qta_man_sedu:   manSedu > 0 ? manSedu : undefined,
+      qta_man_bufdol: manBuf  > 0 ? manBuf  : undefined,
+      note: nota.trim() || undefined,
+    })
+  }
+
+  const numInput = (val: number, set: (v: number) => void, lbl: string) => (
+    <div className="flex flex-col items-center gap-0.5">
+      <span className="text-xs text-slate-500">{lbl}</span>
+      <input type="number" min={0} step={1} value={val}
+        onChange={(e) => set(Number(e.target.value))}
+        className="w-14 bg-slate-800 border border-slate-600 rounded px-1 py-1 text-sm text-slate-100 text-center focus:outline-none focus:border-indigo-500"
+      />
+    </div>
+  )
+
+  return (
+    <div className="mt-2 p-3 bg-slate-800/60 rounded-lg border border-slate-700/60">
+      <p className="text-xs font-medium text-slate-300 mb-2 truncate">{label}</p>
+      <div className="flex items-end gap-2 flex-wrap">
+        {!isGenerico && (
+          <>
+            <div>
+              <p className="text-xs text-slate-600 mb-1">Quantità (0 = automatica)</p>
+              <div className="flex gap-1">
+                {numInput(manApe,  setManApe,  'Ape')}
+                {numInput(manSedu, setManSedu, 'Sedu')}
+                {numInput(manBuf,  setManBuf,  'Buf')}
+              </div>
+            </div>
+          </>
+        )}
+        <div className="flex flex-col gap-0.5 flex-1 min-w-32">
+          <span className="text-xs text-slate-500">{isGenerico ? 'Descrizione *' : 'Note'}</span>
+          <input
+            type="text" value={nota} onChange={(e) => setNota(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') submit(); if (e.key === 'Escape') onCancel() }}
+            placeholder={isGenerico ? 'Descrivi la richiesta…' : 'Note opzionali…'}
+            autoFocus
+            className="bg-slate-800 border border-slate-600 rounded px-2 py-1 text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
+          />
+        </div>
+        <div className="flex gap-1">
+          <button onClick={submit} disabled={isPending || (isGenerico && !nota.trim())}
+            className="p-1.5 rounded text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-50 transition-colors">
+            {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+          </button>
+          <button onClick={onCancel}
+            className="p-1.5 rounded text-slate-500 hover:bg-slate-700 transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 const AggiuntaPanel = ({ idEvento, addedCodes, standardByCodTipo, sezioni }: AggiuntaPanelProps) => {
-  const [open, setOpen]                   = useState(false)
-  const [selectedCat, setSelectedCat]     = useState<string | null>(null)
-  const [searchValue, setSearchValue]     = useState<string | null>(null)
-  const [notaLibera, setNotaLibera]       = useState('')
-  const [showNotaForm, setShowNotaForm]   = useState(false)
-  const { mutate: doAdd, isPending }      = useAddArticolo(idEvento)
+  const [open, setOpen]               = useState(false)
+  const [selectedCat, setSelectedCat] = useState<string | null>(null)
+  const [searchValue, setSearchValue] = useState<string | null>(null)
+  const [pending, setPending]         = useState<{ cod: string; label: string } | null>(null)
+  const { mutate: doAdd, isPending }  = useAddArticolo(idEvento)
 
-  const addArticolo = (cod: string, note?: string) => {
-    doAdd({ cod_articolo: cod, note })
+  const addArticolo = useCallback((cod: string, label: string) => {
+    setPending({ cod, label })
+  }, [])
+
+  const confirmAdd = (body: Parameters<typeof doAdd>[0]) => {
+    doAdd(body, {
+      onSuccess: () => {
+        setPending(null)
+        setSearchValue(null)
+      },
+    })
   }
 
-  const addVoceLibera = () => {
-    if (!notaLibera.trim()) return
-    doAdd(
-      { cod_articolo: COD_ARTICOLO_GENERICO, note: notaLibera.trim() },
-      { onSuccess: () => { setNotaLibera(''); setShowNotaForm(false) } },
-    )
-  }
-
-  const standardItems = selectedCat ? (standardByCodTipo.get(selectedCat) ?? []) : []
   const selectedSezione = sezioni.find((s) => s.cod_tipo === selectedCat)
+  const standardItems = selectedCat ? (standardByCodTipo.get(selectedCat) ?? []) : []
 
   return (
     <div className="border-t border-slate-800 bg-slate-950">
-      {/* Toggle header */}
       <button
-        onClick={() => { setOpen((v) => !v); if (!open) setSelectedCat(null) }}
+        onClick={() => { setOpen((v) => !v); if (!open) { setSelectedCat(null); setPending(null) } }}
         className="w-full flex items-center gap-2 px-5 py-3 hover:bg-slate-900/50 transition-colors text-left"
       >
         <Plus className="w-4 h-4 text-indigo-400 shrink-0" />
@@ -304,90 +411,70 @@ const AggiuntaPanel = ({ idEvento, addedCodes, standardByCodTipo, sezioni }: Agg
       </button>
 
       {open && (
-        <div className="px-5 pb-5 space-y-4">
-
-          {/* Selezione categoria */}
+        <div className="px-5 pb-5 space-y-3">
           {!selectedCat ? (
-            <div>
-              <p className="text-xs text-slate-500 mb-2.5">Seleziona una categoria</p>
+            <>
+              <p className="text-xs text-slate-500">Seleziona una categoria</p>
               <div className="flex flex-wrap gap-1.5">
                 {sezioni.map((s) => (
-                  <button
-                    key={s.cod_tipo}
-                    onClick={() => setSelectedCat(s.cod_tipo)}
+                  <button key={s.cod_tipo}
+                    onClick={() => { setSelectedCat(s.cod_tipo); setPending(null) }}
                     className="px-3 py-1.5 rounded-full text-xs border bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 hover:border-indigo-500/50 hover:text-indigo-300 transition-colors"
                   >
                     {cleanLabel(s.descrizione)}
                   </button>
                 ))}
               </div>
-
-              {/* Voce libera */}
-              <div className="mt-3 pt-3 border-t border-slate-800/60">
-                {showNotaForm ? (
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text" value={notaLibera}
-                      onChange={(e) => setNotaLibera(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === 'Enter') addVoceLibera(); if (e.key === 'Escape') setShowNotaForm(false) }}
-                      placeholder="Descrivi la richiesta speciale…"
-                      autoFocus
-                      className="flex-1 bg-slate-800 border border-slate-600 rounded-md px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
-                    />
-                    <button onClick={addVoceLibera} disabled={isPending || !notaLibera.trim()}
-                      className="p-2 rounded text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-50 transition-colors">
-                      {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                    </button>
-                    <button onClick={() => { setShowNotaForm(false); setNotaLibera('') }}
-                      className="p-2 rounded text-slate-500 hover:bg-slate-700 transition-colors">
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
+              {/* Voce personalizzata */}
+              <div className="pt-2 border-t border-slate-800/60">
+                {pending?.cod === COD_ARTICOLO_GENERICO ? (
+                  <AddConfirmForm
+                    label="Voce personalizzata"
+                    codArticolo={COD_ARTICOLO_GENERICO}
+                    idEvento={idEvento}
+                    onConfirm={confirmAdd}
+                    onCancel={() => setPending(null)}
+                    isPending={isPending}
+                  />
                 ) : (
-                  <button onClick={() => setShowNotaForm(true)}
+                  <button onClick={() => setPending({ cod: COD_ARTICOLO_GENERICO, label: 'Voce personalizzata' })}
                     className="flex items-center gap-1.5 text-xs text-slate-600 hover:text-slate-400 transition-colors">
                     <Plus className="w-3.5 h-3.5" />
                     Aggiungi voce personalizzata
                   </button>
                 )}
               </div>
-            </div>
+            </>
           ) : (
-            <div>
-              {/* Header categoria selezionata */}
-              <div className="flex items-center gap-2 mb-3">
-                <button
-                  onClick={() => { setSelectedCat(null); setSearchValue(null) }}
-                  className="text-xs text-slate-500 hover:text-slate-300 transition-colors flex items-center gap-1"
-                >
-                  <X className="w-3 h-3" />
-                  {cleanLabel(selectedSezione?.descrizione ?? selectedCat)}
-                </button>
-              </div>
+            <>
+              {/* Header categoria */}
+              <button
+                onClick={() => { setSelectedCat(null); setSearchValue(null); setPending(null) }}
+                className="text-xs text-slate-500 hover:text-slate-300 flex items-center gap-1 transition-colors"
+              >
+                <X className="w-3 h-3" />
+                {cleanLabel(selectedSezione?.descrizione ?? selectedCat)}
+              </button>
 
               {/* Chip suggeriti */}
               {standardItems.length > 0 && (
-                <div className="mb-3">
+                <div>
                   <p className="text-xs text-slate-600 mb-1.5">Suggeriti</p>
                   <div className="flex flex-wrap gap-1.5">
                     {standardItems.map((a) => {
                       const added = addedCodes.has(a.cod_articolo)
+                      const lbl = a.descrizione ? cleanLabel(a.descrizione.length > 32 ? a.descrizione.slice(0, 32) + '…' : a.descrizione) : a.cod_articolo
                       return (
-                        <button
-                          key={a.cod_articolo}
-                          onClick={() => !added && addArticolo(a.cod_articolo)}
-                          disabled={added || isPending}
-                          title={a.descrizione ?? a.cod_articolo}
+                        <button key={a.cod_articolo}
+                          onClick={() => !added && addArticolo(a.cod_articolo, a.descrizione ?? a.cod_articolo)}
+                          disabled={added}
                           className={`px-2.5 py-1 rounded-full text-xs transition-colors border ${
                             added
                               ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 cursor-default'
                               : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 hover:border-indigo-500/50 hover:text-indigo-300'
                           }`}
                         >
-                          {added ? '✓ ' : '+ '}
-                          {a.descrizione
-                            ? cleanLabel(a.descrizione.length > 32 ? a.descrizione.slice(0, 32) + '…' : a.descrizione)
-                            : a.cod_articolo}
+                          {added ? '✓ ' : '+ '}{lbl}
                         </button>
                       )
                     })}
@@ -395,19 +482,33 @@ const AggiuntaPanel = ({ idEvento, addedCodes, standardByCodTipo, sezioni }: Agg
                 </div>
               )}
 
-              {/* Combobox ricerca */}
-              <ArticoloCombobox
-                value={searchValue}
-                onChange={(cod) => {
-                  if (cod) {
-                    addArticolo(cod)
-                    setSearchValue(null)
-                  }
-                }}
-                codTipo={selectedCat}
-                placeholder={`Cerca in ${cleanLabel(selectedSezione?.descrizione ?? selectedCat)}…`}
-              />
-            </div>
+              {/* Form conferma aggiunta (chip selezionata) */}
+              {pending && pending.cod !== COD_ARTICOLO_GENERICO && (
+                <AddConfirmForm
+                  label={pending.label}
+                  codArticolo={pending.cod}
+                  idEvento={idEvento}
+                  onConfirm={confirmAdd}
+                  onCancel={() => setPending(null)}
+                  isPending={isPending}
+                />
+              )}
+
+              {/* Combobox */}
+              {!pending && (
+                <ArticoloCombobox
+                  value={searchValue}
+                  onChange={(cod, art) => {
+                    if (cod && art) {
+                      setSearchValue(null)
+                      addArticolo(cod, art.descrizione ?? cod)
+                    }
+                  }}
+                  codTipo={selectedCat}
+                  placeholder={`Cerca in ${cleanLabel(selectedSezione?.descrizione ?? selectedCat)}…`}
+                />
+              )}
+            </>
           )}
         </div>
       )}
@@ -421,7 +522,14 @@ export const ListaCaricaPage = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const idEvento = Number(id)
+  const queryClient = useQueryClient()
+
+  // Draft: mappa itemId → modifiche pendenti
+  const [draft, setDraft] = useState<Map<number, DraftChanges>>(new Map())
   const [editingId, setEditingId] = useState<number | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
+
+  const hasDraft = draft.size > 0
 
   const { data: evento } = useQuery({
     queryKey: queryKeys.eventi.detail(idEvento),
@@ -435,7 +543,6 @@ export const ListaCaricaPage = () => {
 
   const addedCodes = useMemo(() => new Set(lista.map((i) => i.cod_articolo)), [lista])
 
-  // Standard chips per sezione (rank IS NOT NULL, solo con descrizione, top 6)
   const standardByCodTipo = useMemo(() => {
     const map = new Map<string, ArticoloLookupItem[]>()
     for (const a of articoli) {
@@ -450,14 +557,63 @@ export const ListaCaricaPage = () => {
     return map
   }, [articoli])
 
+  // Aggiorna le modifiche di un item nel draft
+  const updateDraft = useCallback((itemId: number, changes: DraftChanges) => {
+    setDraft((prev) => {
+      const next = new Map(prev)
+      next.set(itemId, { ...(prev.get(itemId) ?? {}), ...changes })
+      return next
+    })
+  }, [])
+
+  // Salva tutto il draft su BigQuery
+  const saveDraft = async () => {
+    if (!hasDraft) return
+    setIsSaving(true)
+    try {
+      await Promise.all(
+        Array.from(draft.entries()).map(([itemId, changes]) => {
+          const item = lista.find((i) => i.id === itemId)
+          if (!item) return Promise.resolve()
+          const body: UpdateListaItemBody = {
+            qta_ape:        'qta_ape'    in changes ? changes.qta_ape    : undefined,
+            qta_sedu:       'qta_sedu'   in changes ? changes.qta_sedu   : undefined,
+            qta_bufdol:     'qta_bufdol' in changes ? changes.qta_bufdol : undefined,
+            qta_man_ape:    changes.qta_man_ape    ?? item.qta_man_ape,
+            qta_man_sedu:   changes.qta_man_sedu   ?? item.qta_man_sedu,
+            qta_man_bufdol: changes.qta_man_bufdol ?? item.qta_man_bufdol,
+            note:        'note'       in changes ? changes.note       ?? null : item.note,
+            colore:      'colore'     in changes ? changes.colore     ?? null : item.colore,
+            dimensioni:  'dimensioni' in changes ? changes.dimensioni ?? null : item.dimensioni,
+          }
+          return updateArticolo(idEvento, itemId, body)
+        })
+      )
+      setDraft(new Map())
+      setEditingId(null)
+      await queryClient.invalidateQueries({ queryKey: queryKeys.lista.byEvento(idEvento) })
+      toast.success('Lista salvata')
+    } catch {
+      toast.error('Errore durante il salvataggio')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const discardDraft = () => {
+    setDraft(new Map())
+    setEditingId(null)
+  }
+
+  // Guard: evento non confermato
+  const notConfirmed = evento && evento.stato !== 400
+
   return (
     <div className="flex flex-col h-full bg-slate-950">
       {/* Header */}
-      <div className="px-5 py-4 border-b border-slate-800 flex items-center gap-3 shrink-0">
-        <button
-          onClick={() => navigate(`/gestionale/eventi/${idEvento}`)}
-          className="text-slate-500 hover:text-slate-300 transition-colors"
-        >
+      <div className="px-5 py-3 border-b border-slate-800 flex items-center gap-3 shrink-0">
+        <button onClick={() => navigate(`/gestionale/eventi/${idEvento}`)}
+          className="text-slate-500 hover:text-slate-300 transition-colors">
           <ArrowLeft className="w-4 h-4" />
         </button>
         <div className="flex-1 min-w-0">
@@ -469,15 +625,43 @@ export const ListaCaricaPage = () => {
             </p>
           )}
         </div>
-        {!isLoading && lista.length > 0 && (
-          <span className="text-xs text-slate-500 tabular-nums shrink-0">
-            {lista.length} articol{lista.length !== 1 ? 'i' : 'o'}
-          </span>
-        )}
+
+        {/* Contatore + pulsanti draft */}
+        <div className="flex items-center gap-2 shrink-0">
+          {!isLoading && lista.length > 0 && !hasDraft && (
+            <span className="text-xs text-slate-500 tabular-nums">
+              {lista.length} articol{lista.length !== 1 ? 'i' : 'o'}
+            </span>
+          )}
+          {hasDraft && (
+            <>
+              <span className="text-xs text-amber-400 tabular-nums">
+                {draft.size} modific{draft.size !== 1 ? 'he' : 'a'}
+              </span>
+              <button onClick={discardDraft}
+                className="px-2.5 py-1 text-xs text-slate-400 hover:text-slate-200 border border-slate-700 hover:border-slate-500 rounded-md transition-colors">
+                Annulla
+              </button>
+              <button onClick={saveDraft} disabled={isSaving}
+                className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium bg-indigo-600 hover:bg-indigo-500 text-white rounded-md transition-colors disabled:opacity-50">
+                {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                Salva
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
+      {/* Avviso evento non confermato */}
+      {notConfirmed && (
+        <div className="flex items-center gap-2 px-5 py-3 bg-amber-950/30 border-b border-amber-900/40 text-xs text-amber-400">
+          <AlertTriangle className="w-4 h-4 shrink-0" />
+          Questo evento non è confermato — la lista di carico è in sola lettura.
+        </div>
+      )}
+
       {/* Parametri ospiti */}
-      {evento && (
+      {evento && !notConfirmed && (
         <ParametriPanel
           idEvento={idEvento}
           totOspiti={evento.tot_ospiti}
@@ -497,7 +681,6 @@ export const ListaCaricaPage = () => {
           </div>
         ) : (
           <>
-            {/* Tabella articoli */}
             {lista.length > 0 ? (
               <table className="w-full text-sm">
                 <thead className="bg-slate-900 border-b border-slate-800 sticky top-0 z-10">
@@ -506,16 +689,31 @@ export const ListaCaricaPage = () => {
                     <th className="text-center px-3 py-2.5 font-medium text-slate-600 text-xs uppercase tracking-wider w-20">Ape</th>
                     <th className="text-center px-3 py-2.5 font-medium text-slate-600 text-xs uppercase tracking-wider w-20">Sedu</th>
                     <th className="text-center px-3 py-2.5 font-medium text-slate-600 text-xs uppercase tracking-wider w-20">Buf</th>
-                    <th className="text-left px-3 py-2.5 font-medium text-slate-600 text-xs uppercase tracking-wider">Note</th>
+                    <th className="text-left px-3 py-2.5 font-medium text-slate-600 text-xs uppercase tracking-wider">Dettagli</th>
                     <th className="w-20 px-3 py-2.5" />
                   </tr>
                 </thead>
                 <tbody>
                   {lista.map((item) =>
                     editingId === item.id ? (
-                      <EditRow key={item.id} item={item} idEvento={idEvento} onCancel={() => setEditingId(null)} />
+                      <EditRow
+                        key={item.id}
+                        item={item}
+                        draft={draft.get(item.id) ?? {}}
+                        onDraftChange={(changes) => updateDraft(item.id, changes)}
+                        onClose={() => setEditingId(null)}
+                      />
                     ) : (
-                      <ItemRow key={item.id} item={item} idEvento={idEvento} onEdit={() => setEditingId(item.id)} />
+                      <ItemRow
+                        key={item.id}
+                        item={item}
+                        draft={draft.get(item.id)}
+                        idEvento={idEvento}
+                        onEdit={() => {
+                          if (notConfirmed) return
+                          setEditingId(item.id)
+                        }}
+                      />
                     )
                   )}
                 </tbody>
@@ -526,14 +724,11 @@ export const ListaCaricaPage = () => {
                 <p className="text-sm">Nessun articolo in lista</p>
               </div>
             )}
-
-            {/* Spacer per spingere il pannello aggiungi in fondo */}
             <div className="flex-1" />
           </>
         )}
 
-        {/* Pannello aggiungi — sempre visibile in fondo */}
-        {!isLoading && !isError && (
+        {!isLoading && !isError && !notConfirmed && (
           <AggiuntaPanel
             idEvento={idEvento}
             addedCodes={addedCodes}

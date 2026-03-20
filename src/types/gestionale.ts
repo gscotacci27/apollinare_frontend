@@ -81,6 +81,8 @@ export interface ListaCaricaItem {
   qta_man_sedu: number
   qta_man_bufdol: number
   note: string | null
+  colore: string | null
+  dimensioni: string | null
   ordine: number
   cod_tipo: string | null
   tipo_descrizione: string | null
@@ -117,6 +119,8 @@ export interface UpdateListaItemBody {
   qta_man_sedu: number
   qta_man_bufdol: number
   note: string | null
+  colore: string | null
+  dimensioni: string | null
 }
 
 // ── Tipi legacy (usati da altri moduli, non SF-001) ───────────────────────────

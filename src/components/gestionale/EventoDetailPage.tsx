@@ -82,21 +82,34 @@ export const EventoDetailPage = () => {
         </div>
       </div>
 
-      {/* Accessi ai moduli (SF-002, SF-003 — da implementare) */}
+      {/* Accessi ai moduli */}
       <div className="px-6 py-4 space-y-2">
         <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-3">Moduli</p>
 
-        <Link
-          to={`/gestionale/eventi/${idNum}/lista-carico`}
-          className="flex items-center gap-3 px-4 py-3 bg-slate-900 border border-slate-800 rounded-lg hover:border-slate-600 transition-colors group"
-        >
-          <ClipboardList className="w-4 h-4 text-slate-500 group-hover:text-indigo-400 transition-colors" />
-          <div>
-            <p className="text-sm text-slate-200">Lista di carico</p>
-            <p className="text-xs text-slate-500">Articoli e materiali pianificati</p>
+        {evento.stato === 400 ? (
+          <Link
+            to={`/gestionale/eventi/${idNum}/lista-carico`}
+            className="flex items-center gap-3 px-4 py-3 bg-slate-900 border border-slate-800 rounded-lg hover:border-slate-600 transition-colors group"
+          >
+            <ClipboardList className="w-4 h-4 text-slate-500 group-hover:text-indigo-400 transition-colors" />
+            <div>
+              <p className="text-sm text-slate-200">Lista di carico</p>
+              <p className="text-xs text-slate-500">Articoli e materiali pianificati</p>
+            </div>
+            <span className="ml-auto text-slate-600 text-sm">→</span>
+          </Link>
+        ) : (
+          <div className="flex items-center gap-3 px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-lg opacity-50 cursor-not-allowed">
+            <ClipboardList className="w-4 h-4 text-slate-600" />
+            <div>
+              <p className="text-sm text-slate-400">Lista di carico</p>
+              <p className="text-xs text-slate-600">Disponibile solo per eventi confermati</p>
+            </div>
+            <span className="ml-auto text-xs text-slate-600 bg-slate-800 px-2 py-0.5 rounded-full">
+              Conferma evento
+            </span>
           </div>
-          <span className="ml-auto text-slate-600 text-sm">→</span>
-        </Link>
+        )}
 
         <Link
           to={`/gestionale/eventi/${idNum}/dettagli`}
