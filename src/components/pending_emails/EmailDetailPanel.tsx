@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { format, formatDistanceToNow } from 'date-fns'
-import { Mail } from 'lucide-react'
+import { Mail, Loader2, Sparkles, Send } from 'lucide-react'
 import { IntentBadge } from './IntentBadge'
 import { SenderBadge } from './SenderBadge'
 import { Button } from '@/components/ui/Button'
@@ -9,22 +8,31 @@ import type { Email } from '@/types/email'
 
 interface EmailDetailPanelProps {
   email: Email | null
-  onApprove: (draft: string) => void
-  onReject: () => void
-  isPending: boolean
+  isLoadingDetail: boolean
+  draft: string
+  onDraftChange: (value: string) => void
+  onGenerate: () => void
+  onSend: () => void
+  isGenerating: boolean
+  isSending: boolean
 }
 
-export const EmailDetailPanel = ({ email, onApprove, onReject, isPending }: EmailDetailPanelProps) => {
-  const [draft, setDraft] = useState('')
-
-  useEffect(() => {
-    if (email) setDraft(email.draft_reply)
-  }, [email?.request_id])
+export const EmailDetailPanel = ({
+  email,
+  isLoadingDetail,
+  draft,
+  onDraftChange,
+  onGenerate,
+  onSend,
+  isGenerating,
+  isSending,
+}: EmailDetailPanelProps) => {
+  const isBusy = isGenerating || isSending
 
   return (
     <div className="h-full flex flex-col bg-white">
       <AnimatePresence mode="wait">
-        {!email ? (
+        {!email && !isLoadingDetail ? (
           <motion.div
             key="empty"
             initial={{ opacity: 0 }}
@@ -39,11 +47,21 @@ export const EmailDetailPanel = ({ email, onApprove, onReject, isPending }: Emai
             <div>
               <p className="text-sm font-medium text-slate-600">Select an email to review</p>
               <p className="text-xs text-slate-400 mt-1">
-                Choose an email from the list to see the full details and draft reply.
+                Choose an email from the list, then generate and send a reply.
               </p>
             </div>
           </motion.div>
-        ) : (
+        ) : isLoadingDetail ? (
+          <motion.div
+            key="loading"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="flex-1 flex items-center justify-center"
+          >
+            <Loader2 className="w-6 h-6 text-slate-300 animate-spin" />
+          </motion.div>
+        ) : email ? (
           <motion.div
             key={email.request_id}
             initial={{ opacity: 0, x: 16 }}
@@ -82,49 +100,67 @@ export const EmailDetailPanel = ({ email, onApprove, onReject, isPending }: Emai
                   Original email
                 </p>
                 <div className="bg-slate-50 border border-slate-100 rounded-lg p-4 text-sm text-slate-700 font-mono leading-relaxed whitespace-pre-wrap max-h-52 overflow-y-auto">
-                  {email.raw_email_body}
+                  {email.raw_email_body || (
+                    <span className="text-slate-400 italic">No preview available</span>
+                  )}
                 </div>
               </div>
 
-              {/* Draft reply */}
+              {/* Response box */}
               <div>
                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                  Draft reply
-                  <span className="ml-2 text-slate-300 font-normal normal-case tracking-normal">
-                    — editable
-                  </span>
+                  Response
+                  {draft && (
+                    <span className="ml-2 text-slate-300 font-normal normal-case tracking-normal">
+                      — editable
+                    </span>
+                  )}
                 </p>
-                <textarea
-                  value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
-                  rows={9}
-                  className="w-full text-sm text-slate-800 bg-white border border-slate-200 rounded-lg p-4 leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition-colors"
-                />
+                <div className="relative">
+                  <textarea
+                    value={draft}
+                    onChange={(e) => onDraftChange(e.target.value)}
+                    disabled={isBusy}
+                    rows={10}
+                    placeholder={
+                      isGenerating
+                        ? 'Generating response…'
+                        : 'Press "Generate Response" to create a draft reply.'
+                    }
+                    className="w-full text-sm text-slate-800 bg-white border border-slate-200 rounded-lg p-4 leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition-colors disabled:bg-slate-50 disabled:text-slate-400 placeholder:text-slate-300"
+                  />
+                  {isGenerating && (
+                    <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-white/60">
+                      <Loader2 className="w-5 h-5 text-indigo-400 animate-spin" />
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
             {/* Action buttons */}
-            <div className="px-6 py-4 border-t border-slate-100 space-y-2 shrink-0">
-              <Button
-                color="green"
-                className="w-full"
-                onClick={() => onApprove(draft)}
-                disabled={isPending || !draft.trim()}
-              >
-                Approve &amp; send
-              </Button>
+            <div className="px-6 py-4 border-t border-slate-100 flex gap-3 shrink-0">
               <Button
                 variant="outline"
-                color="red"
-                className="w-full"
-                onClick={onReject}
-                disabled={isPending}
+                className="flex-1 flex items-center justify-center gap-2"
+                onClick={onGenerate}
+                disabled={isBusy}
               >
-                Reject
+                <Sparkles className="w-4 h-4" />
+                Generate Response
+              </Button>
+              <Button
+                color="green"
+                className="flex-1 flex items-center justify-center gap-2"
+                onClick={onSend}
+                disabled={isBusy || !draft.trim()}
+              >
+                <Send className="w-4 h-4" />
+                Send Email
               </Button>
             </div>
           </motion.div>
-        )}
+        ) : null}
       </AnimatePresence>
     </div>
   )

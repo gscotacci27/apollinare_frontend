@@ -25,10 +25,16 @@ export const getPendingEmails = async (): Promise<Email[]> => {
   return data
 }
 
-export const approveEmail = async (request_id: string, draft_reply: string): Promise<void> => {
-  await api.post(`/emails/${request_id}/approve`, { draft_reply })
+export const getEmailById = async (request_id: string): Promise<Email> => {
+  const { data } = await api.get<Email>(`/emails/${request_id}`)
+  return data
 }
 
-export const rejectEmail = async (request_id: string, reason: string): Promise<void> => {
-  await api.post(`/emails/${request_id}/reject`, { reason })
+export const generateResponse = async (request_id: string): Promise<string> => {
+  const { data } = await api.post<{ draft: string }>(`/emails/${request_id}/generate`)
+  return data.draft
+}
+
+export const sendEmail = async (request_id: string, body: string): Promise<void> => {
+  await api.post(`/emails/${request_id}/send`, { body })
 }

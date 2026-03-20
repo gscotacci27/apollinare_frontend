@@ -1,15 +1,15 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { approveEmail } from '@/services/api'
+import { sendEmail } from '@/services/api'
 import { queryKeys } from '@/services/queryKeys'
 import type { Email } from '@/types/email'
 import toast from 'react-hot-toast'
 
-export const useApproveEmail = () => {
+export const useSendEmail = (onSuccess?: (request_id: string) => void) => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ request_id, draft_reply }: { request_id: string; draft_reply: string }) =>
-      approveEmail(request_id, draft_reply),
+    mutationFn: ({ request_id, body }: { request_id: string; body: string }) =>
+      sendEmail(request_id, body),
 
     onMutate: async ({ request_id }) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.emails.pending() })
@@ -20,13 +20,14 @@ export const useApproveEmail = () => {
       return { previous }
     },
 
-    onSuccess: () => {
-      toast.success('Reply approved and sent')
+    onSuccess: (_data, { request_id }) => {
+      toast.success('Email sent successfully')
+      onSuccess?.(request_id)
     },
 
     onError: (_err, _vars, ctx) => {
       queryClient.setQueryData(queryKeys.emails.pending(), ctx?.previous)
-      toast.error('Something went wrong, please try again')
+      toast.error('Failed to send email, please try again')
     },
 
     onSettled: () => {

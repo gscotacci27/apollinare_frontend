@@ -1,25 +1,29 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { TopBar } from '@/components/layout/TopBar'
 import { EmailCard } from './EmailCard'
 import { EmailDetailPanel } from './EmailDetailPanel'
 import { EmailSkeleton } from './EmailSkeleton'
-import { RejectModal } from './RejectModal'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { useEmails } from '@/hooks/useEmails'
-import { useApproveEmail } from '@/hooks/useApproveEmail'
-import { useRejectEmail } from '@/hooks/useRejectEmail'
-import type { Email } from '@/types/email'
+import { useEmailDetail } from '@/hooks/useEmailDetail'
+import { useGenerateResponse } from '@/hooks/useGenerateResponse'
+import { useSendEmail } from '@/hooks/useSendEmail'
 
 export const PendingEmailsPage = () => {
   const { data: emails = [], isLoading } = useEmails()
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [rejectModalOpen, setRejectModalOpen] = useState(false)
+  // Draft lives here so it resets on email switch and is shared between
+  // the Generate button and the Send button.
+  const [draft, setDraft] = useState('')
 
-  const approveMutation = useApproveEmail()
-  const rejectMutation = useRejectEmail()
+  const { data: selectedEmail, isLoading: isLoadingDetail } = useEmailDetail(selectedId)
 
-  const selectedEmail = emails.find((e) => e.request_id === selectedId) ?? null
+  // CRITICAL: reset draft every time a different email is selected to prevent
+  // a previously generated response from leaking into the new selection.
+  useEffect(() => {
+    setDraft('')
+  }, [selectedId])
 
   const selectNext = (currentId: string) => {
     const idx = emails.findIndex((e) => e.request_id === currentId)
@@ -27,28 +31,23 @@ export const PendingEmailsPage = () => {
     setSelectedId(next?.request_id ?? null)
   }
 
-  const handleApprove = (email: Email, draft: string) => {
-    approveMutation.mutate(
-      { request_id: email.request_id, draft_reply: draft },
-      { onSuccess: () => selectNext(email.request_id) },
-    )
+  const generateMutation = useGenerateResponse((generatedDraft) => {
+    setDraft(generatedDraft)
+  })
+
+  const sendMutation = useSendEmail((sentId) => {
+    selectNext(sentId)
+  })
+
+  const handleGenerate = () => {
+    if (!selectedId) return
+    generateMutation.mutate(selectedId)
   }
 
-  const handleRejectConfirm = (reason: string) => {
-    if (!selectedEmail) return
-    const id = selectedEmail.request_id
-    rejectMutation.mutate(
-      { request_id: id, reason },
-      {
-        onSuccess: () => {
-          setRejectModalOpen(false)
-          selectNext(id)
-        },
-      },
-    )
+  const handleSend = () => {
+    if (!selectedId || !draft.trim()) return
+    sendMutation.mutate({ request_id: selectedId, body: draft })
   }
-
-  const isPending = approveMutation.isPending || rejectMutation.isPending
 
   return (
     <div className="flex flex-col h-full">
@@ -78,15 +77,6 @@ export const PendingEmailsPage = () => {
                     index={index}
                     selected={email.request_id === selectedId}
                     onClick={() => setSelectedId(email.request_id)}
-                    onApprove={(e) => {
-                      e.stopPropagation()
-                      handleApprove(email, email.draft_reply)
-                    }}
-                    onReject={(e) => {
-                      e.stopPropagation()
-                      setSelectedId(email.request_id)
-                      setRejectModalOpen(true)
-                    }}
                   />
                 ))}
               </AnimatePresence>
@@ -97,20 +87,17 @@ export const PendingEmailsPage = () => {
         {/* Right column — detail panel (60%) */}
         <div className="flex-1 overflow-hidden">
           <EmailDetailPanel
-            email={selectedEmail}
-            onApprove={(draft) => selectedEmail && handleApprove(selectedEmail, draft)}
-            onReject={() => setRejectModalOpen(true)}
-            isPending={isPending}
+            email={selectedEmail ?? null}
+            isLoadingDetail={isLoadingDetail && !!selectedId}
+            draft={draft}
+            onDraftChange={setDraft}
+            onGenerate={handleGenerate}
+            onSend={handleSend}
+            isGenerating={generateMutation.isPending}
+            isSending={sendMutation.isPending}
           />
         </div>
       </div>
-
-      <RejectModal
-        open={rejectModalOpen}
-        onClose={() => setRejectModalOpen(false)}
-        onConfirm={handleRejectConfirm}
-        isPending={rejectMutation.isPending}
-      />
     </div>
   )
 }
