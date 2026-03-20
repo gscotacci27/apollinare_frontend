@@ -76,6 +76,8 @@ export interface ListaCaricaItem {
   qta_man_bufdol: number
   note: string | null
   ordine: number
+  tipo_descrizione: string | null
+  cod_step: number
 }
 
 export interface ArticoloLookupItem {
