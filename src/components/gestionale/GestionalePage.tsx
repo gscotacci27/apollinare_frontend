@@ -1,21 +1,28 @@
-import { useState } from 'react'
-import { Plus, Loader2, CalendarX } from 'lucide-react'
+import { useState, useMemo } from 'react'
+import { Plus, Loader2, CalendarX, ArrowUpDown } from 'lucide-react'
 import { useEventi } from '@/hooks/useEventi'
 import { useAuth } from '@/contexts/AuthContext'
 import { FILTRI_STATO } from '@/types/gestionale'
 import { EventCard } from './EventCard'
 import { NuovoEventoModal } from './NuovoEventoModal'
 
+type SortOrder = 'asc' | 'desc'
+
 export const GestionalePage = () => {
   const { isOrganizzatore } = useAuth()
   const [statoFilter, setStatoFilter] = useState<number | undefined>(undefined)
+  const [sortOrder, setSortOrder] = useState<SortOrder>('asc')
   const [showModal, setShowModal] = useState(false)
 
   const { data: eventi = [], isLoading, isError } = useEventi(statoFilter)
 
+  // Sort client-side — il backend ordina ASC di default, invertiamo se desc
+  const eventiSorted = useMemo(() => {
+    if (sortOrder === 'asc') return eventi
+    return [...eventi].reverse()
+  }, [eventi, sortOrder])
+
   const handleFilterChange = (value: number | undefined) => {
-    // Il cambio di filtro svuota immediatamente la lista perché il queryKey cambia.
-    // Non serve reset manuale: React Query gestisce la cache separata per chiave.
     setStatoFilter(value)
   }
 
@@ -30,15 +37,27 @@ export const GestionalePage = () => {
           )}
         </div>
 
-        {isOrganizzatore && (
+        <div className="flex items-center gap-2">
+          {/* Sort toggle */}
           <button
-            onClick={() => setShowModal(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs rounded-md font-medium transition-colors"
+            onClick={() => setSortOrder((o) => (o === 'asc' ? 'desc' : 'asc'))}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 text-xs rounded-md transition-colors"
+            title={sortOrder === 'asc' ? 'Data crescente' : 'Data decrescente'}
           >
-            <Plus className="w-3.5 h-3.5" />
-            Nuovo evento
+            <ArrowUpDown className="w-3.5 h-3.5" />
+            {sortOrder === 'asc' ? 'Prima i più vicini' : 'Prima i più lontani'}
           </button>
-        )}
+
+          {isOrganizzatore && (
+            <button
+              onClick={() => setShowModal(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs rounded-md font-medium transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Nuovo evento
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Filtri stato */}
@@ -85,7 +104,7 @@ export const GestionalePage = () => {
           </div>
         ) : (
           <div className="space-y-2">
-            {eventi.map((e) => (
+            {eventiSorted.map((e) => (
               <EventCard key={e.id} evento={e} />
             ))}
           </div>

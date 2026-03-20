@@ -42,7 +42,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY)
-      return stored ? JSON.parse(stored) : null
+      if (!stored) return null
+      const parsed = JSON.parse(stored) as Partial<User>
+      // Sessioni vecchie non hanno il campo role — lo calcoliamo dall'email
+      if (!parsed.role && parsed.email) {
+        parsed.role = ORGANIZZATORI_EMAILS.has(parsed.email) ? 'organizzatore' : 'viewer'
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed))
+      }
+      return parsed as User
     } catch {
       return null
     }
