@@ -1,4 +1,6 @@
-import { useState, useMemo } from 'react'
+import { useMemo } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import { useState } from 'react'
 import { Plus, Loader2, CalendarX, ArrowUpDown } from 'lucide-react'
 import { useEventi } from '@/hooks/useEventi'
 import { useAuth } from '@/contexts/AuthContext'
@@ -6,24 +8,38 @@ import { FILTRI_STATO } from '@/types/gestionale'
 import { EventCard } from './EventCard'
 import { NuovoEventoModal } from './NuovoEventoModal'
 
-type SortOrder = 'asc' | 'desc'
-
 export const GestionalePage = () => {
   const { isOrganizzatore } = useAuth()
-  const [statoFilter, setStatoFilter] = useState<number | undefined>(undefined)
-  const [sortOrder, setSortOrder] = useState<SortOrder>('asc')
   const [showModal, setShowModal] = useState(false)
+
+  // Stato filtro e sort in URL → sopravvivono alla navigazione avanti/indietro
+  const [searchParams, setSearchParams] = useSearchParams()
+  const statoFilter = searchParams.get('stato') ? Number(searchParams.get('stato')) : undefined
+  const sortOrder = (searchParams.get('sort') ?? 'asc') as 'asc' | 'desc'
 
   const { data: eventi = [], isLoading, isError } = useEventi(statoFilter)
 
-  // Sort client-side — il backend ordina ASC di default, invertiamo se desc
   const eventiSorted = useMemo(() => {
-    if (sortOrder === 'asc') return eventi
-    return [...eventi].reverse()
+    return [...eventi].sort((a, b) => {
+      const da = a.data ?? ''
+      const db = b.data ?? ''
+      return sortOrder === 'asc' ? da.localeCompare(db) : db.localeCompare(da)
+    })
   }, [eventi, sortOrder])
 
   const handleFilterChange = (value: number | undefined) => {
-    setStatoFilter(value)
+    setSearchParams((p) => {
+      if (value === undefined) p.delete('stato')
+      else p.set('stato', String(value))
+      return p
+    })
+  }
+
+  const toggleSort = () => {
+    setSearchParams((p) => {
+      p.set('sort', sortOrder === 'asc' ? 'desc' : 'asc')
+      return p
+    })
   }
 
   return (
@@ -40,7 +56,7 @@ export const GestionalePage = () => {
         <div className="flex items-center gap-2">
           {/* Sort toggle */}
           <button
-            onClick={() => setSortOrder((o) => (o === 'asc' ? 'desc' : 'asc'))}
+            onClick={toggleSort}
             className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 text-xs rounded-md transition-colors"
             title={sortOrder === 'asc' ? 'Data crescente' : 'Data decrescente'}
           >
