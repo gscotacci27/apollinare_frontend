@@ -76,7 +76,14 @@ export interface ListaCaricaItem {
   qta_man_bufdol: number
   note: string | null
   ordine: number
+  cod_tipo: string | null
   tipo_descrizione: string | null
+  cod_step: number
+}
+
+export interface SezioneItem {
+  cod_tipo: string
+  descrizione: string
   cod_step: number
 }
 
@@ -84,6 +91,8 @@ export interface ArticoloLookupItem {
   cod_articolo: string
   descrizione: string | null
   qta_giac: number | null
+  cod_tipo: string | null
+  rank: number | null
 }
 
 export interface AddArticoloBody {

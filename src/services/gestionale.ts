@@ -1,7 +1,7 @@
 import axios from 'axios'
 import type {
   EventoResponse, EventoCreate, LocationItem, TipoEventoItem,
-  ListaCaricaItem, ArticoloLookupItem, AddArticoloBody, UpdateListaItemBody,
+  ListaCaricaItem, ArticoloLookupItem, SezioneItem, AddArticoloBody, UpdateListaItemBody,
 } from '@/types/gestionale'
 
 const gestionale = axios.create({
@@ -47,6 +47,11 @@ export const createLocation = async (location: string): Promise<LocationItem> =>
 
 export const getTipiEvento = async (): Promise<TipoEventoItem[]> => {
   const { data } = await gestionale.get<TipoEventoItem[]>('/lookup/tipi-evento')
+  return data
+}
+
+export const getSezioni = async (): Promise<SezioneItem[]> => {
+  const { data } = await gestionale.get<SezioneItem[]>('/lookup/sezioni')
   return data
 }
 

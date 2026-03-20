@@ -8,6 +8,7 @@ interface Props {
   onChange: (cod: string | null, articolo?: ArticoloLookupItem) => void
   placeholder?: string
   className?: string
+  codTipo?: string   // se valorizzato filtra per sezione
 }
 
 export const ArticoloCombobox = ({
@@ -15,8 +16,12 @@ export const ArticoloCombobox = ({
   onChange,
   placeholder = 'Cerca articolo…',
   className = '',
+  codTipo,
 }: Props) => {
-  const { data: articoli = [], isLoading } = useLookupArticoli()
+  const { data: rawArticoli = [], isLoading } = useLookupArticoli()
+  const articoli = codTipo
+    ? rawArticoli.filter((a) => a.cod_tipo === codTipo)
+    : rawArticoli
 
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')

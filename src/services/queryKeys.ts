@@ -19,5 +19,6 @@ export const queryKeys = {
     location: ['lookup', 'location'] as const,
     tipiEvento: ['lookup', 'tipi-evento'] as const,
     articoli: ['lookup', 'articoli'] as const,
+    sezioni: ['lookup', 'sezioni'] as const,
   },
 }
