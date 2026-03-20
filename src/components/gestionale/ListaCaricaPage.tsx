@@ -155,11 +155,15 @@ const EditRow = ({
     </div>
   )
 
+  const isGenerico = item.cod_articolo === COD_ARTICOLO_GENERICO
+
   return (
     <tr className="bg-indigo-950/30 border-b border-slate-700/50">
       <td className="px-4 py-2.5 text-sm">
-        <p className="text-slate-300 font-medium">{item.descrizione ?? item.cod_articolo}</p>
-        <p className="text-xs text-slate-500">{item.cod_articolo}</p>
+        <p className="text-slate-300 font-medium">
+          {isGenerico ? (item.note ?? 'Voce personalizzata') : (item.descrizione ?? item.cod_articolo)}
+        </p>
+        {!isGenerico && <p className="text-xs text-slate-500">{item.cod_articolo}</p>}
       </td>
       <td className="px-2 py-2.5" colSpan={3}>
         <div className="flex items-end gap-2 flex-wrap">
@@ -208,11 +212,16 @@ const ItemRow = ({
   const [confirmDel, setConfirmDel] = useState(false)
   const { mutate: doDelete, isPending } = useDeleteArticolo(idEvento)
 
+  const isGenerico = item.cod_articolo === COD_ARTICOLO_GENERICO
+  const label = isGenerico
+    ? (item.note ?? 'Voce personalizzata')
+    : (item.descrizione ?? item.cod_articolo)
+
   return (
     <tr className="border-b border-slate-800/40 hover:bg-slate-900/30 group transition-colors">
       <td className="px-4 py-2 text-sm">
-        <p className="text-slate-200 truncate max-w-xs">{item.descrizione ?? item.cod_articolo}</p>
-        <p className="text-xs text-slate-600">{item.cod_articolo}</p>
+        <p className="text-slate-200 truncate max-w-xs">{label}</p>
+        {!isGenerico && <p className="text-xs text-slate-600">{item.cod_articolo}</p>}
       </td>
       <td className="px-3 py-2 text-sm text-center w-16">
         <QtaCell auto={item.qta_ape} manual={item.qta_man_ape} />
@@ -394,7 +403,7 @@ const Section = ({
 // ── Sezione voce personalizzata ────────────────────────────────────────────────
 
 // Codice articolo generico usato come voce personalizzata (placeholder Oracle)
-const COD_ARTICOLO_GENERICO = 'gen se'
+const COD_ARTICOLO_GENERICO = 'gen-buf'
 
 const SectionVociPersonalizzate = ({
   items, idEvento, editingId, onEdit,
