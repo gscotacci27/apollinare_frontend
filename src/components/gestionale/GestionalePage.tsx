@@ -1,143 +1,101 @@
 import { useState } from 'react'
-import { format } from 'date-fns'
-import { it } from 'date-fns/locale'
-import { Users, MapPin, Loader2, Plus } from 'lucide-react'
-import { TopBar } from '@/components/layout/TopBar'
+import { Plus, Loader2, CalendarX } from 'lucide-react'
 import { useEventi } from '@/hooks/useEventi'
-import { STATO_LABELS, STATI_FILTER } from '@/types/gestionale'
+import { useAuth } from '@/contexts/AuthContext'
+import { FILTRI_STATO } from '@/types/gestionale'
+import { EventCard } from './EventCard'
 import { NuovoEventoModal } from './NuovoEventoModal'
-import { EventoPanel } from './EventoPanel'
-import type { Evento } from '@/types/gestionale'
-
-function StatoBadge({ stato }: { stato: number }) {
-  const s = STATO_LABELS[stato] ?? { label: String(stato), color: 'text-slate-400 bg-slate-100' }
-  return (
-    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${s.color}`}>{s.label}</span>
-  )
-}
-
-function EventoRow({ evento, onClick }: { evento: Evento; onClick: () => void }) {
-  const dataStr = evento.data
-    ? format(new Date(evento.data), 'd MMM yyyy', { locale: it })
-    : '—'
-
-  return (
-    <tr
-      className="border-b border-slate-100 hover:bg-indigo-50 transition-colors cursor-pointer"
-      onClick={onClick}
-    >
-      <td className="px-4 py-3 text-sm text-slate-500 whitespace-nowrap">{dataStr}</td>
-      <td className="px-4 py-3">
-        <div className="text-sm font-medium text-slate-800">{evento.cliente ?? '—'}</div>
-        {evento.descrizione && (
-          <div className="text-xs text-slate-400 truncate max-w-[200px]">{evento.descrizione}</div>
-        )}
-      </td>
-      <td className="px-4 py-3 text-sm text-slate-500">{evento.descrizione_tipo ?? evento.cod_tipo ?? '—'}</td>
-      <td className="px-4 py-3">
-        {evento.location ? (
-          <span className="flex items-center gap-1 text-sm text-slate-500">
-            <MapPin className="w-3.5 h-3.5 shrink-0" />
-            {evento.location}
-          </span>
-        ) : (
-          <span className="text-sm text-slate-300">—</span>
-        )}
-      </td>
-      <td className="px-4 py-3">
-        {evento.tot_ospiti != null ? (
-          <span className="flex items-center gap-1 text-sm text-slate-500">
-            <Users className="w-3.5 h-3.5 shrink-0" />
-            {evento.tot_ospiti}
-          </span>
-        ) : (
-          <span className="text-sm text-slate-300">—</span>
-        )}
-      </td>
-      <td className="px-4 py-3">
-        <StatoBadge stato={evento.stato} />
-      </td>
-    </tr>
-  )
-}
 
 export const GestionalePage = () => {
+  const { isOrganizzatore } = useAuth()
   const [statoFilter, setStatoFilter] = useState<number | undefined>(undefined)
-  const [showNuovoEvento, setShowNuovoEvento] = useState(false)
-  const [selectedId, setSelectedId] = useState<number | null>(null)
+  const [showModal, setShowModal] = useState(false)
+
   const { data: eventi = [], isLoading, isError } = useEventi(statoFilter)
 
-  return (
-    <div className="flex flex-col h-full">
-      <TopBar title="Gestionale" count={eventi.length} />
+  const handleFilterChange = (value: number | undefined) => {
+    // Il cambio di filtro svuota immediatamente la lista perché il queryKey cambia.
+    // Non serve reset manuale: React Query gestisce la cache separata per chiave.
+    setStatoFilter(value)
+  }
 
-      {/* Filter bar */}
-      <div className="px-6 py-3 border-b border-slate-200 bg-white flex items-center gap-2">
-        <span className="text-xs text-slate-400 mr-1">Stato:</span>
-        <div className="flex items-center gap-1 flex-1 flex-wrap">
-          {STATI_FILTER.map((s) => (
-            <button
-              key={String(s.value)}
-              onClick={() => setStatoFilter(s.value)}
-              className={`text-xs px-3 py-1 rounded-full transition-colors ${
-                statoFilter === s.value
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-              }`}
-            >
-              {s.label}
-            </button>
-          ))}
+  return (
+    <div className="flex flex-col h-full bg-slate-950">
+      {/* Header */}
+      <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between shrink-0">
+        <div>
+          <h1 className="text-sm font-semibold text-slate-100">Eventi</h1>
+          {!isLoading && (
+            <p className="text-xs text-slate-500 mt-0.5">{eventi.length} evento{eventi.length !== 1 ? 'i' : ''}</p>
+          )}
         </div>
 
-        <button
-          onClick={() => setShowNuovoEvento(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white text-xs rounded-lg hover:bg-indigo-700 transition-colors shrink-0"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          Nuovo evento
-        </button>
+        {isOrganizzatore && (
+          <button
+            onClick={() => setShowModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs rounded-md font-medium transition-colors"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Nuovo evento
+          </button>
+        )}
       </div>
 
-      {/* Table */}
-      <div className="flex-1 overflow-auto bg-white">
+      {/* Filtri stato */}
+      <div className="px-6 py-3 border-b border-slate-800 flex items-center gap-1.5 shrink-0 overflow-x-auto">
+        {FILTRI_STATO.map((f) => (
+          <button
+            key={String(f.value)}
+            onClick={() => handleFilterChange(f.value)}
+            className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+              statoFilter === f.value
+                ? 'bg-indigo-600 text-white'
+                : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200'
+            }`}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Lista */}
+      <div className="flex-1 overflow-y-auto px-6 py-4">
         {isLoading ? (
-          <div className="flex items-center justify-center h-full gap-2 text-slate-400 text-sm">
+          <div className="flex items-center justify-center gap-2 py-20 text-slate-500 text-sm">
             <Loader2 className="w-4 h-4 animate-spin" />
             Caricamento eventi…
           </div>
         ) : isError ? (
-          <div className="flex items-center justify-center h-full text-sm text-red-400">
-            Errore nel caricamento. Verificare che il gestionale sia raggiungibile.
+          <div className="flex flex-col items-center justify-center gap-2 py-20 text-sm">
+            <p className="text-red-400">Errore nel caricamento degli eventi.</p>
+            <p className="text-slate-500 text-xs">Verificare che il gestionale sia raggiungibile.</p>
           </div>
         ) : eventi.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-sm text-slate-400">
-            Nessun evento trovato.
+          <div className="flex flex-col items-center justify-center gap-2 py-20 text-slate-500">
+            <CalendarX className="w-8 h-8 text-slate-700" />
+            <p className="text-sm">Nessun evento trovato</p>
+            {isOrganizzatore && (
+              <button
+                onClick={() => setShowModal(true)}
+                className="mt-1 text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
+              >
+                Crea il primo evento →
+              </button>
+            )}
           </div>
         ) : (
-          <table className="w-full text-left">
-            <thead className="sticky top-0 bg-slate-50 border-b border-slate-200">
-              <tr>
-                <th className="px-4 py-2.5 text-xs font-medium text-slate-500 uppercase tracking-wide">Data</th>
-                <th className="px-4 py-2.5 text-xs font-medium text-slate-500 uppercase tracking-wide">Cliente</th>
-                <th className="px-4 py-2.5 text-xs font-medium text-slate-500 uppercase tracking-wide">Tipo</th>
-                <th className="px-4 py-2.5 text-xs font-medium text-slate-500 uppercase tracking-wide">Location</th>
-                <th className="px-4 py-2.5 text-xs font-medium text-slate-500 uppercase tracking-wide">Ospiti</th>
-                <th className="px-4 py-2.5 text-xs font-medium text-slate-500 uppercase tracking-wide">Stato</th>
-              </tr>
-            </thead>
-            <tbody>
-              {eventi.map((e) => (
-                <EventoRow key={e.id} evento={e} onClick={() => setSelectedId(e.id)} />
-              ))}
-            </tbody>
-          </table>
+          <div className="space-y-2">
+            {eventi.map((e) => (
+              <EventCard key={e.id} evento={e} />
+            ))}
+          </div>
         )}
       </div>
 
-      {showNuovoEvento && <NuovoEventoModal onClose={() => setShowNuovoEvento(false)} />}
-      {selectedId != null && (
-        <EventoPanel idEvento={selectedId} onClose={() => setSelectedId(null)} />
+      {showModal && (
+        <NuovoEventoModal
+          onClose={() => setShowModal(false)}
+        />
       )}
     </div>
   )

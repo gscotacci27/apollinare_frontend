@@ -21,6 +21,11 @@ const GestionalePage = lazy(() =>
     default: m.GestionalePage,
   })),
 )
+const EventoDetailPage = lazy(() =>
+  import('@/components/gestionale/EventoDetailPage').then((m) => ({
+    default: m.EventoDetailPage,
+  })),
+)
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -31,25 +36,27 @@ const queryClient = new QueryClient({
   },
 })
 
+const Fallback = () => (
+  <div className="flex h-screen items-center justify-center text-slate-400 text-sm">
+    Loading…
+  </div>
+)
+
 function AppRoutes() {
   const { user } = useAuth()
 
   if (!user) return <LoginPage />
 
   return (
-    <Suspense
-      fallback={
-        <div className="flex h-screen items-center justify-center text-slate-400 text-sm">
-          Loading…
-        </div>
-      }
-    >
+    <Suspense fallback={<Fallback />}>
       <Routes>
         <Route element={<Layout />}>
-          <Route index element={<Navigate to="/emails" replace />} />
+          <Route index element={<Navigate to="/gestionale" replace />} />
           <Route path="chatbot" element={<ChatbotPage />} />
           <Route path="emails" element={<PendingEmailsPage />} />
+          {/* Gestionale — SF-001+ */}
           <Route path="gestionale" element={<GestionalePage />} />
+          <Route path="gestionale/eventi/:id" element={<EventoDetailPage />} />
         </Route>
       </Routes>
     </Suspense>

@@ -1,42 +1,67 @@
-export interface Evento {
+// ── Evento ────────────────────────────────────────────────────────────────────
+
+export interface EventoResponse {
   id: number
   descrizione: string | null
-  cod_tipo: string | null
-  cliente: string | null
-  cliente_tel: string | null
-  cliente_email: string | null
-  indirizzo: string | null
-  data: string | null
+  data: string | null        // ISO date string "YYYY-MM-DD"
+  ora_evento: string | null
   stato: number
-  tot_ospiti: number | null
+  cliente: string | null
   id_location: number | null
-  location: string | null
-  tipo_pasto: string | null
-  descrizione_tipo: string | null
-  color: string | null
-  status: string | null
-  note: string | null
-  // mise en place
-  sedia: string | null
-  tovaglia: string | null
-  tovagliolo: string | null
-  runner: string | null
-  sottopiatti: string | null
-  piattino_pane: string | null
-  posate: string | null
-  bicchieri: string | null
-  stile_colori: string | null
-  // menu
-  primi: string | null
-  secondi: string | null
-  vini: string | null
-  torta: string | null
-  confettata: string | null
-  allergie: string | null
+  location_nome: string | null
+  tot_ospiti: number | null
 }
 
-export type EventoCreate = Partial<Omit<Evento, 'id' | 'tot_ospiti' | 'location' | 'tipo_pasto' | 'descrizione_tipo' | 'color' | 'status'>>
-export type EventoUpdate = Partial<Omit<Evento, 'id' | 'tot_ospiti' | 'location' | 'tipo_pasto' | 'descrizione_tipo' | 'color' | 'status'>>
+export interface EventoCreate {
+  descrizione: string
+  data: string               // ISO date "YYYY-MM-DD"
+  ora_evento?: string | null
+  id_location?: number | null
+  stato: number
+  cliente?: string | null
+}
+
+// ── Stato ─────────────────────────────────────────────────────────────────────
+
+// I tre stati gestibili nel nuovo sistema
+export const STATI_GESTIBILI = [
+  { value: 100, label: 'Preventivo' },
+  { value: 200, label: 'In lavorazione' },
+  { value: 400, label: 'Confermato' },
+] as const
+
+// Mapping completo per la visualizzazione (include stati legacy del DB Oracle)
+export const STATO_CONFIG: Record<number, { label: string; bg: string; text: string }> = {
+  100: { label: 'Preventivo',      bg: 'bg-slate-100',  text: 'text-slate-600' },
+  200: { label: 'In lavorazione',  bg: 'bg-amber-50',   text: 'text-amber-700' },
+  300: { label: 'In lavorazione',  bg: 'bg-amber-50',   text: 'text-amber-700' },
+  350: { label: 'In lavorazione',  bg: 'bg-amber-50',   text: 'text-amber-700' },
+  400: { label: 'Confermato',      bg: 'bg-green-50',   text: 'text-green-700' },
+  900: { label: 'Annullato',       bg: 'bg-red-50',     text: 'text-red-600'   },
+}
+
+// Tab filtro nella EventiPage
+export const FILTRI_STATO = [
+  { value: undefined, label: 'Tutti' },
+  { value: 100,       label: 'Preventivo' },
+  { value: 200,       label: 'In lavorazione' },
+  { value: 400,       label: 'Confermato' },
+] as const
+
+// ── Lookup ────────────────────────────────────────────────────────────────────
+
+export interface LocationItem {
+  id: number
+  location: string
+}
+
+export interface TipoEventoItem {
+  cod_tipo: string
+  descrizione: string
+  tipo_pasto: string | null
+}
+
+// ── Tipi legacy (usati da altri moduli, non SF-001) ───────────────────────────
 
 export interface OspitiItem {
   cod_tipo_ospite: string
@@ -45,17 +70,6 @@ export interface OspitiItem {
   sconto: number
   note: string | null
   ordine: number | null
-}
-
-export interface TipoEvento {
-  cod_tipo: string
-  descrizione: string
-  tipo_pasto: string | null
-}
-
-export interface Location {
-  id: number
-  location: string
 }
 
 export interface PreventivoTipo {
@@ -76,23 +90,3 @@ export interface Preventivo {
   totale_netto: number
   totale_ivato: number
 }
-
-// Corrispondenza reale con i codici Oracle
-export const STATO_LABELS: Record<number, { label: string; color: string }> = {
-  100: { label: 'Preventivo',       color: 'text-slate-600 bg-slate-100' },
-  200: { label: 'Scheda Evento',    color: 'text-blue-500 bg-blue-50' },
-  300: { label: 'Sch. Confermata',  color: 'text-amber-600 bg-amber-50' },
-  350: { label: 'Quasi Confermata', color: 'text-orange-500 bg-orange-50' },
-  400: { label: 'Confermato',       color: 'text-green-600 bg-green-50' },
-  900: { label: 'Non Accettato',    color: 'text-purple-500 bg-purple-50' },
-}
-
-export const STATI_FILTER = [
-  { value: undefined, label: 'Tutti' },
-  { value: 100,       label: 'Preventivo' },
-  { value: 200,       label: 'Scheda Evento' },
-  { value: 300,       label: 'Sch. Confermata' },
-  { value: 350,       label: 'Quasi Confermata' },
-  { value: 400,       label: 'Confermato' },
-  { value: 900,       label: 'Non Accettato' },
-]

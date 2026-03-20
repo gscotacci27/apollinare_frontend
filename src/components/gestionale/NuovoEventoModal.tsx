@@ -1,176 +1,174 @@
-import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { X, Loader2 } from 'lucide-react'
-import toast from 'react-hot-toast'
-import { createEvento, getTipiEvento, getLocation } from '@/services/gestionale'
-import type { EventoCreate } from '@/types/gestionale'
+import { useState, FormEvent } from 'react'
+import { X } from 'lucide-react'
+import { useCreateEvento } from '@/hooks/useCreateEvento'
+import { useLookupLocation } from '@/hooks/useLookupLocation'
+import { STATI_GESTIBILI } from '@/types/gestionale'
 
 interface Props {
   onClose: () => void
+  onCreated?: (id: number) => void
 }
 
-export function NuovoEventoModal({ onClose }: Props) {
-  const qc = useQueryClient()
-  const [form, setForm] = useState<EventoCreate>({ stato: 100 })
+export const NuovoEventoModal = ({ onClose, onCreated }: Props) => {
+  const [form, setForm] = useState({
+    descrizione: '',
+    data: '',
+    ora_evento: '',
+    id_location: '' as string | number,
+    stato: 100,
+    cliente: '',
+  })
+  const [dateError, setDateError] = useState('')
 
-  const { data: tipi = [] } = useQuery({ queryKey: ['tipi-evento'], queryFn: getTipiEvento })
-  const { data: locations = [] } = useQuery({ queryKey: ['location'], queryFn: getLocation })
-
-  const mutation = useMutation({
-    mutationFn: createEvento,
-    onSuccess: ({ id }) => {
-      toast.success(`Evento #${id} creato`)
-      qc.invalidateQueries({ queryKey: ['eventi'] })
-      onClose()
-    },
-    onError: () => toast.error('Errore durante la creazione'),
+  const { data: locations = [] } = useLookupLocation()
+  const { mutate, isPending } = useCreateEvento((id) => {
+    onCreated?.(id)
+    onClose()
   })
 
-  const set = (field: keyof EventoCreate, value: string | number | undefined) =>
+  const set = (field: string, value: unknown) =>
     setForm((f) => ({ ...f, [field]: value }))
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const todayIso = new Date().toISOString().split('T')[0]
+  const tomorrowIso = new Date(Date.now() + 86_400_000).toISOString().split('T')[0]
+
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
-    if (!form.cliente?.trim()) { toast.error('Inserire il nome del cliente'); return }
-    mutation.mutate(form)
+    setDateError('')
+
+    // Validazione data futura lato frontend (il backend la ripete)
+    if (!form.data || form.data <= todayIso) {
+      setDateError("La data dell'evento deve essere futura")
+      return
+    }
+
+    mutate({
+      descrizione: form.descrizione.trim(),
+      data: form.data,
+      ora_evento: form.ora_evento || null,
+      id_location: form.id_location !== '' ? Number(form.id_location) : null,
+      stato: form.stato,
+      cliente: form.cliente.trim() || null,
+    })
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div className="bg-slate-900 border border-slate-700 rounded-xl w-full max-w-md mx-4 shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-          <h2 className="text-sm font-semibold text-slate-800">Nuovo evento</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800">
+          <h2 className="text-sm font-semibold text-slate-100">Nuovo evento</h2>
+          <button onClick={onClose} className="text-slate-500 hover:text-slate-300 transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
-          {/* Cliente */}
+        <form onSubmit={handleSubmit} className="px-5 py-4 space-y-4">
+
+          {/* Titolo */}
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">
-              Cliente <span className="text-red-400">*</span>
+            <label className="block text-xs font-medium text-slate-400 mb-1">
+              Titolo <span className="text-red-500">*</span>
             </label>
             <input
+              required
               type="text"
-              value={form.cliente ?? ''}
-              onChange={(e) => set('cliente', e.target.value)}
-              placeholder="Nome cliente"
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+              value={form.descrizione}
+              onChange={(e) => set('descrizione', e.target.value)}
+              placeholder="es. Matrimonio Rossi"
+              className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
             />
           </div>
 
-          {/* Data + Stato */}
+          {/* Data + Ora */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Data evento</label>
+              <label className="block text-xs font-medium text-slate-400 mb-1">
+                Data <span className="text-red-500">*</span>
+              </label>
               <input
+                required
                 type="date"
-                value={form.data ?? ''}
-                onChange={(e) => set('data', e.target.value || undefined)}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                min={tomorrowIso}
+                value={form.data}
+                onChange={(e) => { set('data', e.target.value); setDateError('') }}
+                className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition-colors"
               />
+              {dateError && <p className="text-xs text-red-400 mt-1">{dateError}</p>}
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Stato</label>
-              <select
-                value={form.stato}
-                onChange={(e) => set('stato', Number(e.target.value))}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white"
-              >
-                <option value={100}>Preventivo</option>
-                <option value={200}>Scheda Evento</option>
-                <option value={300}>Sch. Confermata</option>
-                <option value={350}>Quasi Confermata</option>
-                <option value={400}>Confermato</option>
-              </select>
+              <label className="block text-xs font-medium text-slate-400 mb-1">Ora</label>
+              <input
+                type="time"
+                value={form.ora_evento}
+                onChange={(e) => set('ora_evento', e.target.value)}
+                className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition-colors"
+              />
             </div>
-          </div>
-
-          {/* Tipo evento */}
-          <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Tipo evento</label>
-            <select
-              value={form.cod_tipo ?? ''}
-              onChange={(e) => set('cod_tipo', e.target.value || undefined)}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white"
-            >
-              <option value="">— Seleziona tipo —</option>
-              {tipi.map((t) => (
-                <option key={t.cod_tipo} value={t.cod_tipo}>{t.descrizione}</option>
-              ))}
-            </select>
           </div>
 
           {/* Location */}
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Location</label>
+            <label className="block text-xs font-medium text-slate-400 mb-1">Location</label>
             <select
-              value={form.id_location ?? ''}
-              onChange={(e) => set('id_location', e.target.value ? Number(e.target.value) : undefined)}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white"
+              value={form.id_location}
+              onChange={(e) => set('id_location', e.target.value)}
+              className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition-colors"
             >
-              <option value="">— Seleziona location —</option>
+              <option value="">— Nessuna —</option>
               {locations.map((l) => (
                 <option key={l.id} value={l.id}>{l.location}</option>
               ))}
             </select>
           </div>
 
-          {/* Telefono + Email */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Telefono</label>
-              <input
-                type="tel"
-                value={form.cliente_tel ?? ''}
-                onChange={(e) => set('cliente_tel', e.target.value || undefined)}
-                placeholder="+39 000 000 0000"
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Email</label>
-              <input
-                type="email"
-                value={form.cliente_email ?? ''}
-                onChange={(e) => set('cliente_email', e.target.value || undefined)}
-                placeholder="cliente@email.com"
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
-              />
-            </div>
+          {/* Stato */}
+          <div>
+            <label className="block text-xs font-medium text-slate-400 mb-1">
+              Stato <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={form.stato}
+              onChange={(e) => set('stato', Number(e.target.value))}
+              className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition-colors"
+            >
+              {STATI_GESTIBILI.map((s) => (
+                <option key={s.value} value={s.value}>{s.label}</option>
+              ))}
+            </select>
           </div>
 
-          {/* Note */}
+          {/* Cliente */}
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Note</label>
-            <textarea
-              value={form.note ?? ''}
-              onChange={(e) => set('note', e.target.value || undefined)}
-              rows={2}
-              placeholder="Note aggiuntive…"
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 resize-none"
+            <label className="block text-xs font-medium text-slate-400 mb-1">Cliente</label>
+            <input
+              type="text"
+              value={form.cliente}
+              onChange={(e) => set('cliente', e.target.value)}
+              placeholder="Nome o ragione sociale"
+              className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
             />
           </div>
 
           {/* Actions */}
-          <div className="flex justify-end gap-2 pt-1">
+          <div className="flex justify-end gap-2 pt-2">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm text-slate-500 hover:text-slate-700 transition-colors"
+              className="px-4 py-2 text-sm text-slate-400 hover:text-slate-200 transition-colors"
             >
               Annulla
             </button>
             <button
               type="submit"
-              disabled={mutation.isPending}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+              disabled={isPending}
+              className="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-md font-medium transition-colors"
             >
-              {mutation.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-              Crea evento
+              {isPending ? 'Salvataggio…' : 'Crea evento'}
             </button>
           </div>
         </form>
