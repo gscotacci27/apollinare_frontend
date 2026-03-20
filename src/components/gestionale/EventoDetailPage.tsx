@@ -257,11 +257,9 @@ export const EventoDetailPage = () => {
           <FileText className="w-4 h-4 text-slate-500 group-hover:text-indigo-400 transition-colors" />
           <div>
             <p className="text-sm text-slate-200">Scheda evento</p>
-            <p className="text-xs text-slate-500">Menu, mise en place, ospiti, preventivo — SF-003</p>
+            <p className="text-xs text-slate-500">Ospiti, preventivo, extra e acconti</p>
           </div>
-          <span className="ml-auto text-xs bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full">
-            Coming soon
-          </span>
+          <span className="ml-auto text-slate-600 text-sm">→</span>
         </Link>
       </div>
     </div>

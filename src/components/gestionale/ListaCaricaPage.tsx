@@ -417,6 +417,7 @@ const AggiuntaPanel = ({ idEvento, addedCodes, standardByCodTipo, sezioni, onAdd
   const [selectedCat, setSelectedCat] = useState<string | null>(null)
   const [searchValue, setSearchValue] = useState<string | null>(null)
   const [pending, setPending]         = useState<{ cod: string; label: string } | null>(null)
+  const [catFilter, setCatFilter]     = useState('')
   const { mutate: doAdd, isPending }  = useAddArticolo(idEvento)
 
   const addArticolo = useCallback((cod: string, label: string) => {
@@ -452,15 +453,24 @@ const AggiuntaPanel = ({ idEvento, addedCodes, standardByCodTipo, sezioni, onAdd
           {!selectedCat ? (
             <>
               <p className="text-xs text-slate-500">Seleziona una categoria</p>
+              <input
+                type="text"
+                placeholder="Filtra categoria…"
+                value={catFilter}
+                onChange={(e) => setCatFilter(e.target.value)}
+                className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 mb-2"
+              />
               <div className="flex flex-wrap gap-1.5">
-                {sezioni.map((s) => (
-                  <button key={s.cod_tipo}
-                    onClick={() => { setSelectedCat(s.cod_tipo); setPending(null) }}
-                    className="px-3 py-1.5 rounded-full text-xs border bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 hover:border-indigo-500/50 hover:text-indigo-300 transition-colors"
-                  >
-                    {cleanLabel(s.descrizione)}
-                  </button>
-                ))}
+                {sezioni
+                  .filter((s) => !catFilter || cleanLabel(s.descrizione).toLowerCase().includes(catFilter.toLowerCase()))
+                  .map((s) => (
+                    <button key={s.cod_tipo}
+                      onClick={() => { setSelectedCat(s.cod_tipo); setPending(null); setCatFilter('') }}
+                      className="px-3 py-1.5 rounded-full text-xs border bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 hover:border-indigo-500/50 hover:text-indigo-300 transition-colors"
+                    >
+                      {cleanLabel(s.descrizione)}
+                    </button>
+                  ))}
               </div>
               <div className="pt-2 border-t border-slate-800/60">
                 {pending?.cod === COD_ARTICOLO_GENERICO ? (

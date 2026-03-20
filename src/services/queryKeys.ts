@@ -15,6 +15,9 @@ export const queryKeys = {
   lista: {
     byEvento: (id: number) => ['lista', id] as const,
   },
+  scheda: {
+    byEvento: (id: number) => ['scheda', id] as const,
+  },
   lookup: {
     location: ['lookup', 'location'] as const,
     tipiEvento: ['lookup', 'tipi-evento'] as const,

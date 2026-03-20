@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { MapPin, Users, ChevronRight } from 'lucide-react'
+import { Users, ChevronRight } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import { it } from 'date-fns/locale'
 import { StatusBadge } from './StatusBadge'
@@ -23,36 +23,24 @@ export const EventCard = ({ evento }: Props) => {
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          {/* Titolo + stato */}
+          {/* Titolo: data · location · ospiti + stato */}
           <div className="flex items-center gap-2 flex-wrap mb-1">
-            <span className="font-medium text-slate-100 truncate">
-              {evento.descrizione ?? evento.cliente ?? '(senza titolo)'}
+            <span className="font-medium text-slate-100">
+              {dataFormattata}
+              {evento.location_nome && <span className="text-slate-400"> · {evento.location_nome}</span>}
+              {evento.tot_ospiti != null && (
+                <span className="text-slate-400"> · <Users className="w-3.5 h-3.5 inline -mt-0.5" /> {evento.tot_ospiti}</span>
+              )}
             </span>
             <StatusBadge stato={evento.stato} />
           </div>
 
-          {/* Data */}
-          <p className="text-sm text-slate-400">{dataFormattata}</p>
-
-          {/* Metadati secondari */}
-          <div className="flex items-center gap-4 mt-1.5 text-xs text-slate-500">
-            {evento.location_nome && (
-              <span className="flex items-center gap-1">
-                <MapPin className="w-3 h-3 shrink-0" />
-                {evento.location_nome}
-              </span>
-            )}
-            {evento.tot_ospiti != null && (
-              <span className="flex items-center gap-1">
-                <Users className="w-3 h-3 shrink-0" />
-                {evento.tot_ospiti} ospiti
-              </span>
-            )}
-            {/* Mostra cliente come sottotitolo solo se descrizione è già nel titolo */}
-            {evento.descrizione && evento.cliente && (
-              <span className="truncate">{evento.cliente}</span>
-            )}
-          </div>
+          {/* Sottotitolo: cliente — descrizione */}
+          {(evento.cliente || evento.descrizione) && (
+            <p className="text-sm text-slate-400 truncate">
+              {[evento.cliente, evento.descrizione].filter(Boolean).join(' — ')}
+            </p>
+          )}
         </div>
 
         <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-slate-400 shrink-0 mt-0.5 transition-colors" />

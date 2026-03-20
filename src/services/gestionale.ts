@@ -2,7 +2,7 @@ import axios from 'axios'
 import type {
   EventoResponse, EventoCreate, LocationItem, TipoEventoItem,
   ListaCaricaItem, ArticoloLookupItem, SezioneItem, AddArticoloBody, UpdateListaItemBody,
-  PatchEventoBody,
+  PatchEventoBody, SchedaResponse, ExtraItem, AccontoItem,
 } from '@/types/gestionale'
 
 const gestionale = axios.create({
@@ -101,5 +101,54 @@ export const salvaLista = async (idEvento: number): Promise<{ saved: number }> =
 
 export const ricaricaLista = async (idEvento: number): Promise<ListaCaricaItem[]> => {
   const { data } = await gestionale.post<ListaCaricaItem[]>(`/eventi/${idEvento}/lista/ricarica`)
+  return data
+}
+
+// ── SF-003 Scheda Evento ───────────────────────────────────────────────────────
+
+export const getScheda = async (idEvento: number): Promise<SchedaResponse> => {
+  const { data } = await gestionale.get<SchedaResponse>(`/eventi/${idEvento}/scheda`)
+  return data
+}
+
+export const updateOspite = async (
+  idEvento: number,
+  codTipo: string,
+  body: { numero: number; costo: number; sconto: number; note: string | null },
+): Promise<void> => {
+  await gestionale.put(`/eventi/${idEvento}/scheda/ospiti/${encodeURIComponent(codTipo)}`, body)
+}
+
+export const addExtra = async (
+  idEvento: number,
+  body: { descrizione: string; costo: number; quantity: number },
+): Promise<ExtraItem> => {
+  const { data } = await gestionale.post<ExtraItem>(`/eventi/${idEvento}/scheda/extra`, body)
+  return data
+}
+
+export const deleteExtra = async (idEvento: number, id: number): Promise<void> => {
+  await gestionale.delete(`/eventi/${idEvento}/scheda/extra/${id}`)
+}
+
+export const addAcconto = async (
+  idEvento: number,
+  body: { acconto: number; data: string | null; a_conferma: number; descrizione: string | null },
+): Promise<AccontoItem> => {
+  const { data } = await gestionale.post<AccontoItem>(`/eventi/${idEvento}/scheda/acconti`, body)
+  return data
+}
+
+export const deleteAcconto = async (idEvento: number, id: number): Promise<void> => {
+  await gestionale.delete(`/eventi/${idEvento}/scheda/acconti/${id}`)
+}
+
+export const salvaScheda = async (idEvento: number): Promise<{ saved: boolean }> => {
+  const { data } = await gestionale.post<{ saved: boolean }>(`/eventi/${idEvento}/scheda/salva`)
+  return data
+}
+
+export const ricaricaScheda = async (idEvento: number): Promise<SchedaResponse> => {
+  const { data } = await gestionale.post<SchedaResponse>(`/eventi/${idEvento}/scheda/ricarica`)
   return data
 }

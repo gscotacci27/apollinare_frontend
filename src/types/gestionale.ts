@@ -129,6 +129,51 @@ export interface UpdateListaItemBody {
   dimensioni: string | null
 }
 
+// ── SF-003 Scheda Evento ──────────────────────────────────────────────────────
+
+export interface OspiteItem {
+  cod_tipo: string
+  descrizione: string | null
+  numero: number
+  costo: number
+  sconto: number
+  note: string | null
+  ordine: number
+}
+
+export interface ExtraItem {
+  id: number
+  descrizione: string
+  costo: number
+  quantity: number
+  ordine: number
+}
+
+export interface AccontoItem {
+  id: number
+  acconto: number
+  data: string | null
+  a_conferma: number
+  descrizione: string | null
+  ordine: number
+}
+
+export interface PreventivoCalc {
+  ospiti_subtotale: number
+  articoli_subtotale: number
+  extra_subtotale: number
+  totale_netto: number
+  acconti_totale: number
+  saldo: number
+}
+
+export interface SchedaResponse {
+  ospiti: OspiteItem[]
+  extra: ExtraItem[]
+  acconti: AccontoItem[]
+  preventivo: PreventivoCalc
+}
+
 // ── Tipi legacy (usati da altri moduli, non SF-001) ───────────────────────────
 
 export interface OspitiItem {
