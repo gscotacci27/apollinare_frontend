@@ -10,6 +10,12 @@ export interface EventoResponse {
   id_location: number | null
   location_nome: string | null
   tot_ospiti: number | null
+  perc_sedute_aper: number | null
+}
+
+export interface PatchEventoBody {
+  tot_ospiti?: number | null
+  perc_sedute_aper?: number | null
 }
 
 export interface EventoCreate {
@@ -104,6 +110,9 @@ export interface AddArticoloBody {
 }
 
 export interface UpdateListaItemBody {
+  qta_ape?: number | null
+  qta_sedu?: number | null
+  qta_bufdol?: number | null
   qta_man_ape: number
   qta_man_sedu: number
   qta_man_bufdol: number

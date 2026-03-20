@@ -13,17 +13,19 @@ export const useUpdateArticolo = (idEvento: number, onSuccess?: () => void) => {
       qc.setQueryData<ListaCaricaItem[]>(
         queryKeys.lista.byEvento(idEvento),
         (old = []) =>
-          old.map((item) =>
-            item.id === itemId
-              ? {
-                  ...item,
-                  qta_man_ape: body.qta_man_ape,
-                  qta_man_sedu: body.qta_man_sedu,
-                  qta_man_bufdol: body.qta_man_bufdol,
-                  note: body.note,
-                }
-              : item,
-          ),
+          old.map((item) => {
+            if (item.id !== itemId) return item
+            return {
+              ...item,
+              ...(body.qta_ape != null    ? { qta_ape: body.qta_ape }       : {}),
+              ...(body.qta_sedu != null   ? { qta_sedu: body.qta_sedu }     : {}),
+              ...(body.qta_bufdol != null ? { qta_bufdol: body.qta_bufdol } : {}),
+              qta_man_ape: body.qta_man_ape,
+              qta_man_sedu: body.qta_man_sedu,
+              qta_man_bufdol: body.qta_man_bufdol,
+              note: body.note,
+            }
+          }),
       )
       onSuccess?.()
     },

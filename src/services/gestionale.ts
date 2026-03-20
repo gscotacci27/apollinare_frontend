@@ -2,6 +2,7 @@ import axios from 'axios'
 import type {
   EventoResponse, EventoCreate, LocationItem, TipoEventoItem,
   ListaCaricaItem, ArticoloLookupItem, SezioneItem, AddArticoloBody, UpdateListaItemBody,
+  PatchEventoBody,
 } from '@/types/gestionale'
 
 const gestionale = axios.create({
@@ -31,6 +32,10 @@ export const getEvento = async (id: number): Promise<EventoResponse> => {
 export const createEvento = async (body: EventoCreate): Promise<{ id: number }> => {
   const { data } = await gestionale.post<{ id: number }>('/eventi', body)
   return data
+}
+
+export const patchEvento = async (id: number, body: PatchEventoBody): Promise<void> => {
+  await gestionale.patch(`/eventi/${id}`, body)
 }
 
 // ── Lookup ────────────────────────────────────────────────────────────────────

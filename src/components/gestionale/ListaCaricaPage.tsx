@@ -1,6 +1,9 @@
 import { useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Loader2, PackageX, Pencil, Trash2, X, Check, ChevronDown, ChevronRight, Plus } from 'lucide-react'
+import {
+  ArrowLeft, Loader2, PackageX, Pencil, Trash2, X, Check,
+  ChevronDown, ChevronRight, Plus, Users, Save,
+} from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { getEvento } from '@/services/gestionale'
 import { queryKeys } from '@/services/queryKeys'
@@ -10,6 +13,7 @@ import { useUpdateArticolo } from '@/hooks/useUpdateArticolo'
 import { useDeleteArticolo } from '@/hooks/useDeleteArticolo'
 import { useLookupArticoli } from '@/hooks/useLookupArticoli'
 import { useLookupSezioni } from '@/hooks/useLookupSezioni'
+import { usePatchEvento } from '@/hooks/usePatchEvento'
 import { ArticoloCombobox } from './ArticoloCombobox'
 import type { ListaCaricaItem, SezioneItem, ArticoloLookupItem, UpdateListaItemBody } from '@/types/gestionale'
 
@@ -28,31 +32,125 @@ const QtaCell = ({ auto, manual }: { auto: number; manual: number }) => {
   )
 }
 
+// ── Pannello parametri ospiti ──────────────────────────────────────────────────
+
+const ParametriPanel = ({
+  idEvento,
+  totOspiti,
+  percAper,
+}: { idEvento: number; totOspiti: number | null; percAper: number | null }) => {
+  const [editing, setEditing] = useState(false)
+  const [ospiti, setOspiti]   = useState(totOspiti ?? 0)
+  const [perc, setPerc]       = useState(percAper ?? 0)
+  const { mutate, isPending } = usePatchEvento(idEvento, () => setEditing(false))
+
+  const save = () => mutate({ tot_ospiti: ospiti, perc_sedute_aper: perc })
+
+  const nApe  = percAper != null && totOspiti != null
+    ? Math.round(totOspiti * percAper / 100)
+    : null
+  const nSedu = nApe != null && totOspiti != null ? totOspiti - nApe : null
+
+  if (!editing) {
+    return (
+      <div
+        className="flex items-center gap-4 px-4 py-2.5 bg-slate-900/60 border-b border-slate-800 text-xs text-slate-400 cursor-pointer hover:bg-slate-900 transition-colors group"
+        onClick={() => {
+          setOspiti(totOspiti ?? 0)
+          setPerc(percAper ?? 0)
+          setEditing(true)
+        }}
+      >
+        <Users className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+        <span>
+          <span className="text-slate-200 font-medium">{totOspiti ?? '—'}</span> ospiti totali
+        </span>
+        {percAper != null && (
+          <>
+            <span className="text-slate-700">·</span>
+            <span>
+              <span className="text-slate-200 font-medium">{percAper}%</span> in piedi
+              {nApe != null && nSedu != null && (
+                <span className="ml-1 text-slate-600">({nApe} ape · {nSedu} sedu)</span>
+              )}
+            </span>
+          </>
+        )}
+        <span className="ml-auto text-slate-600 group-hover:text-slate-400 transition-colors">
+          <Pencil className="w-3 h-3" />
+        </span>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex items-center gap-3 px-4 py-2.5 bg-indigo-950/30 border-b border-indigo-900/50">
+      <Users className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+      <div className="flex items-center gap-1">
+        <span className="text-xs text-slate-500">Ospiti</span>
+        <input
+          type="number" min={0} step={1} value={ospiti}
+          onChange={(e) => setOspiti(Number(e.target.value))}
+          className="w-16 bg-slate-800 border border-slate-600 rounded px-2 py-1 text-sm text-slate-100 text-center focus:outline-none focus:border-indigo-500"
+        />
+      </div>
+      <div className="flex items-center gap-1">
+        <span className="text-xs text-slate-500">% in piedi</span>
+        <input
+          type="number" min={0} max={100} step={1} value={perc}
+          onChange={(e) => setPerc(Number(e.target.value))}
+          className="w-16 bg-slate-800 border border-slate-600 rounded px-2 py-1 text-sm text-slate-100 text-center focus:outline-none focus:border-indigo-500"
+        />
+      </div>
+      <div className="flex items-center gap-1 ml-1">
+        <button onClick={save} disabled={isPending}
+          className="p-1.5 rounded text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-50 transition-colors">
+          {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+        </button>
+        <button onClick={() => setEditing(false)}
+          className="p-1.5 rounded text-slate-500 hover:bg-slate-700 transition-colors">
+          <X className="w-3.5 h-3.5" />
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ── Edit inline ────────────────────────────────────────────────────────────────
 
 const EditRow = ({
   item, idEvento, onCancel,
 }: { item: ListaCaricaItem; idEvento: number; onCancel: () => void }) => {
-  const [manApe, setManApe]   = useState(item.qta_man_ape)
-  const [manSedu, setManSedu] = useState(item.qta_man_sedu)
-  const [manBuf, setManBuf]   = useState(item.qta_man_bufdol)
-  const [note, setNote]       = useState(item.note ?? '')
-  const { mutate, isPending } = useUpdateArticolo(idEvento, onCancel)
+  const [baseApe,  setBaseApe]  = useState(item.qta_ape)
+  const [baseSedu, setBaseSedu] = useState(item.qta_sedu)
+  const [baseBuf,  setBaseBuf]  = useState(item.qta_bufdol)
+  const [manApe,   setManApe]   = useState(item.qta_man_ape)
+  const [manSedu,  setManSedu]  = useState(item.qta_man_sedu)
+  const [manBuf,   setManBuf]   = useState(item.qta_man_bufdol)
+  const [note, setNote]         = useState(item.note ?? '')
+  const { mutate, isPending }   = useUpdateArticolo(idEvento, onCancel)
 
   const save = () => mutate({
     itemId: item.id,
     body: {
-      qta_man_ape: manApe, qta_man_sedu: manSedu,
-      qta_man_bufdol: manBuf, note: note.trim() || null,
+      qta_ape:       baseApe  !== item.qta_ape    ? baseApe  : undefined,
+      qta_sedu:      baseSedu !== item.qta_sedu   ? baseSedu : undefined,
+      qta_bufdol:    baseBuf  !== item.qta_bufdol ? baseBuf  : undefined,
+      qta_man_ape:   manApe,
+      qta_man_sedu:  manSedu,
+      qta_man_bufdol: manBuf,
+      note: note.trim() || null,
     } satisfies UpdateListaItemBody,
   })
 
-  const numInput = (val: number, set: (v: number) => void, lbl: string) => (
+  const numInput = (val: number, set: (v: number) => void, lbl: string, accent = false) => (
     <div className="flex flex-col items-center gap-0.5">
-      <span className="text-xs text-slate-500">{lbl}</span>
+      <span className={`text-xs ${accent ? 'text-indigo-400' : 'text-slate-500'}`}>{lbl}</span>
       <input type="number" min={0} step={1} value={val}
         onChange={(e) => set(Number(e.target.value))}
-        className="w-14 bg-slate-800 border border-slate-600 rounded px-1 py-1 text-sm text-slate-100 text-center focus:outline-none focus:border-indigo-500"
+        className={`w-14 bg-slate-800 border rounded px-1 py-1 text-sm text-slate-100 text-center focus:outline-none ${
+          accent ? 'border-indigo-700 focus:border-indigo-400' : 'border-slate-600 focus:border-indigo-500'
+        }`}
       />
     </div>
   )
@@ -65,9 +163,18 @@ const EditRow = ({
       </td>
       <td className="px-2 py-2.5" colSpan={3}>
         <div className="flex items-end gap-2 flex-wrap">
-          {numInput(manApe,  setManApe,  '+Ape')}
-          {numInput(manSedu, setManSedu, '+Sedu')}
-          {numInput(manBuf,  setManBuf,  '+Buf')}
+          <div className="flex items-end gap-1">
+            {numInput(baseApe,  setBaseApe,  'Ape')}
+            {numInput(manApe,   setManApe,   '+Ape', true)}
+          </div>
+          <div className="flex items-end gap-1">
+            {numInput(baseSedu, setBaseSedu, 'Sedu')}
+            {numInput(manSedu,  setManSedu,  '+Sedu', true)}
+          </div>
+          <div className="flex items-end gap-1">
+            {numInput(baseBuf,  setBaseBuf,  'Buf')}
+            {numInput(manBuf,   setManBuf,   '+Buf', true)}
+          </div>
           <div className="flex flex-col gap-0.5 flex-1 min-w-28">
             <span className="text-xs text-slate-500">Note</span>
             <input type="text" value={note} onChange={(e) => setNote(e.target.value)}
@@ -284,6 +391,107 @@ const Section = ({
   )
 }
 
+// ── Sezione voce personalizzata ────────────────────────────────────────────────
+
+// Codice articolo generico usato come voce personalizzata (placeholder Oracle)
+const COD_ARTICOLO_GENERICO = 'gen se'
+
+const SectionVociPersonalizzate = ({
+  items, idEvento, editingId, onEdit,
+}: {
+  items: ListaCaricaItem[]
+  idEvento: number
+  editingId: number | null
+  onEdit: (id: number | null) => void
+}) => {
+  const [open, setOpen] = useState(items.length > 0)
+  const [showForm, setShowForm] = useState(false)
+  const [nota, setNota] = useState('')
+  const { mutate: doAdd, isPending: isAdding } = useAddArticolo(idEvento)
+
+  const addVoce = () => {
+    if (!nota.trim()) return
+    doAdd(
+      { cod_articolo: COD_ARTICOLO_GENERICO, note: nota.trim() },
+      { onSuccess: () => { setNota(''); setShowForm(false) } },
+    )
+  }
+
+  return (
+    <div className="border-b border-slate-800">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center gap-2 px-4 py-2.5 bg-slate-900/50 hover:bg-slate-900 transition-colors text-left"
+      >
+        {open
+          ? <ChevronDown className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+          : <ChevronRight className="w-3.5 h-3.5 text-slate-500 shrink-0" />}
+        <span className="flex-1 text-xs font-semibold text-slate-400 uppercase tracking-wide">
+          Voci personalizzate
+        </span>
+        {items.length > 0 && (
+          <span className="text-xs text-slate-500 tabular-nums">{items.length} art.</span>
+        )}
+      </button>
+
+      {open && (
+        <div className="pb-2">
+          {items.length > 0 && (
+            <table className="w-full text-sm mb-2">
+              <tbody>
+                {items.map((item) =>
+                  editingId === item.id ? (
+                    <EditRow key={item.id} item={item} idEvento={idEvento} onCancel={() => onEdit(null)} />
+                  ) : (
+                    <ItemRow key={item.id} item={item} idEvento={idEvento} onEdit={() => onEdit(item.id)} />
+                  )
+                )}
+              </tbody>
+            </table>
+          )}
+
+          <div className="px-4 pt-1">
+            {showForm ? (
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={nota}
+                  onChange={(e) => setNota(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') addVoce(); if (e.key === 'Escape') setShowForm(false) }}
+                  placeholder="Descrivi l'articolo richiesto…"
+                  autoFocus
+                  className="flex-1 bg-slate-800 border border-slate-600 rounded-md px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                />
+                <button
+                  onClick={addVoce}
+                  disabled={isAdding || !nota.trim()}
+                  className="p-2 rounded text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-50 transition-colors"
+                >
+                  {isAdding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                </button>
+                <button
+                  onClick={() => { setShowForm(false); setNota('') }}
+                  className="p-2 rounded text-slate-500 hover:bg-slate-700 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowForm(true)}
+                className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-indigo-400 transition-colors py-0.5"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Aggiungi voce personalizzata
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Pagina principale ──────────────────────────────────────────────────────────
 
 export const ListaCaricaPage = () => {
@@ -308,29 +516,36 @@ export const ListaCaricaPage = () => {
     [lista],
   )
 
-  // Articoli standard per sezione: rank IS NOT NULL, top 6 per rank ASC
+  // Articoli standard per sezione: rank IS NOT NULL, top 6 per rank ASC, solo con descrizione
   const standardByCodTipo = useMemo(() => {
     const map = new Map<string, ArticoloLookupItem[]>()
     for (const a of articoli) {
-      if (a.cod_tipo && a.rank != null) {
+      if (a.cod_tipo && a.rank != null && a.descrizione) {
         if (!map.has(a.cod_tipo)) map.set(a.cod_tipo, [])
         map.get(a.cod_tipo)!.push(a)
       }
     }
-    // Sort per rank ASC e tronca a 6
     for (const [k, v] of map.entries()) {
       map.set(k, v.sort((a, b) => (a.rank ?? 999) - (b.rank ?? 999)).slice(0, 6))
     }
     return map
   }, [articoli])
 
-  // Items per sezione
-  const itemsByCodTipo = useMemo(() => {
+  // Items senza sezione (cod_tipo null) oppure articolo generico → voce personalizzata
+  const vociPersonalizzate = useMemo(
+    () => lista.filter(
+      (i) => i.cod_articolo === COD_ARTICOLO_GENERICO || i.cod_tipo == null,
+    ),
+    [lista],
+  )
+
+  // Items per le sezioni normali (esclude le voci personalizzate)
+  const itemsByCodTipoFiltered = useMemo(() => {
     const map = new Map<string, ListaCaricaItem[]>()
     for (const item of lista) {
-      const key = item.cod_tipo ?? '__altro__'
-      if (!map.has(key)) map.set(key, [])
-      map.get(key)!.push(item)
+      if (item.cod_articolo === COD_ARTICOLO_GENERICO || item.cod_tipo == null) continue
+      if (!map.has(item.cod_tipo!)) map.set(item.cod_tipo!, [])
+      map.get(item.cod_tipo!)!.push(item)
     }
     return map
   }, [lista])
@@ -353,7 +568,6 @@ export const ListaCaricaPage = () => {
             <p className="text-xs text-slate-500 mt-0.5">
               {evento.descrizione ?? evento.cliente ?? '(senza titolo)'}
               {evento.data && <> · {evento.data}</>}
-              {evento.tot_ospiti != null && <> · {evento.tot_ospiti} ospiti</>}
             </p>
           )}
         </div>
@@ -363,6 +577,15 @@ export const ListaCaricaPage = () => {
           </span>
         )}
       </div>
+
+      {/* Pannello parametri ospiti */}
+      {evento && (
+        <ParametriPanel
+          idEvento={idEvento}
+          totOspiti={evento.tot_ospiti}
+          percAper={evento.perc_sedute_aper}
+        />
+      )}
 
       {/* Header colonne (solo se ci sono articoli) */}
       {lista.length > 0 && (
@@ -398,18 +621,26 @@ export const ListaCaricaPage = () => {
             <p className="text-sm">Nessuna sezione disponibile</p>
           </div>
         ) : (
-          sezioni.map((s) => (
-            <Section
-              key={s.cod_tipo}
-              sezione={s}
-              items={itemsByCodTipo.get(s.cod_tipo) ?? []}
-              standardItems={standardByCodTipo.get(s.cod_tipo) ?? []}
-              addedCodes={addedCodes}
+          <>
+            {sezioni.map((s) => (
+              <Section
+                key={s.cod_tipo}
+                sezione={s}
+                items={itemsByCodTipoFiltered.get(s.cod_tipo) ?? []}
+                standardItems={standardByCodTipo.get(s.cod_tipo) ?? []}
+                addedCodes={addedCodes}
+                idEvento={idEvento}
+                editingId={editingId}
+                onEdit={setEditingId}
+              />
+            ))}
+            <SectionVociPersonalizzate
+              items={vociPersonalizzate}
               idEvento={idEvento}
               editingId={editingId}
               onEdit={setEditingId}
             />
-          ))
+          </>
         )}
       </div>
     </div>
