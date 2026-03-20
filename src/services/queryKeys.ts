@@ -36,7 +36,7 @@ export const queryKeys = {
     prossimiEventi: ['dashboard', 'prossimi-eventi'] as const,
     listeAperte: ['dashboard', 'liste-aperte'] as const,
     caricoLavoro: ['dashboard', 'carico-lavoro'] as const,
-    articoliSottoScorta: ['dashboard', 'articoli-sotto-scorta'] as const,
+    articoliSottoScorta: (giorni?: number, data?: string) => ['dashboard', 'articoli-sotto-scorta', giorni ?? 30, data ?? ''] as const,
     attivitaRecenti: ['dashboard', 'attivita-recenti'] as const,
   },
 }

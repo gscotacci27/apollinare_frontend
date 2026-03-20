@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { Loader2, CalendarDays, ClipboardList, Package, TrendingUp, AlertTriangle, Activity } from 'lucide-react'
@@ -252,17 +253,59 @@ function CaricoLavoro() {
 
 // ── Articoli sotto scorta ─────────────────────────────────────────────────────
 
+const SCORTA_PRESET = [
+  { label: 'Oggi', giorni: 1 },
+  { label: '7g',   giorni: 7 },
+  { label: '30g',  giorni: 30 },
+  { label: '60g',  giorni: 60 },
+  { label: '90g',  giorni: 90 },
+] as const
+
 function ArticoliSottoScorta() {
+  const [giorni, setGiorni] = useState(30)
+  const [dataSpecifica, setDataSpecifica] = useState('')
+
+  const opts = dataSpecifica ? { data: dataSpecifica } : { giorni }
+
   const { data = [], isLoading } = useQuery({
-    queryKey: queryKeys.dashboard.articoliSottoScorta,
-    queryFn: getArticoliSottoScorta,
+    queryKey: queryKeys.dashboard.articoliSottoScorta(opts.giorni, opts.data),
+    queryFn: () => getArticoliSottoScorta(opts),
     staleTime: STALE,
   })
 
+  const labelFinestra = dataSpecifica
+    ? fmtData(dataSpecifica)
+    : giorni === 1 ? 'oggi' : `prossimi ${giorni}gg`
+
   return (
     <WidgetShell title="Articoli sotto scorta" icon={<AlertTriangle className="w-4 h-4" />}>
+      {/* Selettore finestra */}
+      <div className="flex items-center gap-1 flex-wrap">
+        {SCORTA_PRESET.map((p) => (
+          <button
+            key={p.giorni}
+            onClick={() => { setGiorni(p.giorni); setDataSpecifica('') }}
+            className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${
+              !dataSpecifica && giorni === p.giorni
+                ? 'bg-indigo-600 text-white'
+                : 'bg-slate-800 text-slate-500 hover:text-slate-300'
+            }`}
+          >
+            {p.label}
+          </button>
+        ))}
+        <input
+          type="date"
+          value={dataSpecifica}
+          onChange={(e) => setDataSpecifica(e.target.value)}
+          className={`ml-auto bg-slate-800 border rounded px-1.5 py-0.5 text-[10px] text-slate-400 focus:outline-none focus:border-indigo-500 transition-colors ${
+            dataSpecifica ? 'border-indigo-500 text-slate-200' : 'border-slate-700'
+          }`}
+        />
+      </div>
+
       {isLoading ? <Spinner /> : data.length === 0 ? (
-        <p className="text-xs text-slate-600 py-4 text-center">Nessun articolo critico</p>
+        <p className="text-xs text-slate-600 py-3 text-center">Nessun articolo critico ({labelFinestra})</p>
       ) : (
         <ul className="space-y-1.5">
           {data.map((a) => (
@@ -270,7 +313,7 @@ function ArticoliSottoScorta() {
               <div className="min-w-0">
                 <p className="text-xs text-slate-200 truncate">{a.descrizione ?? a.cod_articolo}</p>
                 <p className="text-[10px] text-slate-500">
-                  {a.qta_impegnata.toFixed(0)} / {a.qta_giac.toFixed(0)} impegnati
+                  {a.qta_impegnata.toFixed(0)} imp. · {a.qta_giac.toFixed(0)} in stock
                 </p>
               </div>
               <ScortaBadge perc={a.perc_impegnata} />

@@ -79,8 +79,12 @@ export const getCaricoLavoro = async (): Promise<CaricoLavoroItem[]> => {
   return data
 }
 
-export const getArticoliSottoScorta = async (): Promise<ArticoloSottoScorta[]> => {
-  const { data } = await gestionale.get<ArticoloSottoScorta[]>('/dashboard/articoli-sotto-scorta')
+export const getArticoliSottoScorta = async (
+  opts: { giorni?: number; data?: string } = {},
+): Promise<ArticoloSottoScorta[]> => {
+  const { data } = await gestionale.get<ArticoloSottoScorta[]>('/dashboard/articoli-sotto-scorta', {
+    params: opts.data ? { data: opts.data } : { giorni: opts.giorni ?? 30 },
+  })
   return data
 }
 
