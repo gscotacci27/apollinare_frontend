@@ -1,19 +1,15 @@
 import { useQuery } from '@tanstack/react-query'
-import { getEventi } from '@/services/gestionale'
+import { getEventi, type GetEventiParams } from '@/services/gestionale'
 import { queryKeys } from '@/services/queryKeys'
 
 /**
- * Lista eventi per un dato stato (o tutti se undefined).
- *
- * Il queryKey include lo stato: React Query tratta ogni filtro come cache
- * indipendente, quindi al cambio filtro la lista si svuota immediatamente
- * senza che i dati vecchi trapelino nella nuova vista.
+ * Lista eventi con filtri opzionali (stato, date, location).
+ * Tutti i filtri sono inclusi nel queryKey: ogni combinazione ha la
+ * propria cache → al cambio filtro la lista si svuota immediatamente.
  */
-export const useEventi = (stato?: number) =>
+export const useEventi = (filters: GetEventiParams = {}) =>
   useQuery({
-    queryKey: queryKeys.eventi.list(stato),
-    queryFn: () => getEventi(stato !== undefined ? { stato } : undefined),
-    // Nessun placeholderData / keepPreviousData: al cambio filtro mostriamo
-    // subito lo stato di loading invece di dati stantii.
+    queryKey: queryKeys.eventi.list(filters),
+    queryFn: () => getEventi(filters),
     staleTime: 60_000,
   })

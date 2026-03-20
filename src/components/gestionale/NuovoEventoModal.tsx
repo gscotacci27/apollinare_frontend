@@ -1,8 +1,8 @@
 import { useState, FormEvent } from 'react'
 import { X } from 'lucide-react'
 import { useCreateEvento } from '@/hooks/useCreateEvento'
-import { useLookupLocation } from '@/hooks/useLookupLocation'
 import { STATI_GESTIBILI } from '@/types/gestionale'
+import { LocationCombobox } from './LocationCombobox'
 
 interface Props {
   onClose: () => void
@@ -14,13 +14,12 @@ export const NuovoEventoModal = ({ onClose, onCreated }: Props) => {
     descrizione: '',
     data: '',
     ora_evento: '',
-    id_location: '' as string | number,
+    id_location: null as number | null,
     stato: 100,
     cliente: '',
   })
   const [dateError, setDateError] = useState('')
 
-  const { data: locations = [] } = useLookupLocation()
   const { mutate, isPending } = useCreateEvento((id) => {
     onCreated?.(id)
     onClose()
@@ -36,7 +35,6 @@ export const NuovoEventoModal = ({ onClose, onCreated }: Props) => {
     e.preventDefault()
     setDateError('')
 
-    // Validazione data futura lato frontend (il backend la ripete)
     if (!form.data || form.data <= todayIso) {
       setDateError("La data dell'evento deve essere futura")
       return
@@ -46,7 +44,7 @@ export const NuovoEventoModal = ({ onClose, onCreated }: Props) => {
       descrizione: form.descrizione.trim(),
       data: form.data,
       ora_evento: form.ora_evento || null,
-      id_location: form.id_location !== '' ? Number(form.id_location) : null,
+      id_location: form.id_location,
       stato: form.stato,
       cliente: form.cliente.trim() || null,
     })
@@ -66,7 +64,6 @@ export const NuovoEventoModal = ({ onClose, onCreated }: Props) => {
           </button>
         </div>
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="px-5 py-4 space-y-4">
 
           {/* Titolo */}
@@ -111,19 +108,14 @@ export const NuovoEventoModal = ({ onClose, onCreated }: Props) => {
             </div>
           </div>
 
-          {/* Location */}
+          {/* Location — combobox ricercabile con creazione inline */}
           <div>
             <label className="block text-xs font-medium text-slate-400 mb-1">Location</label>
-            <select
+            <LocationCombobox
               value={form.id_location}
-              onChange={(e) => set('id_location', e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition-colors"
-            >
-              <option value="">— Nessuna —</option>
-              {locations.map((l) => (
-                <option key={l.id} value={l.id}>{l.location}</option>
-              ))}
-            </select>
+              onChange={(id) => set('id_location', id)}
+              canCreate
+            />
           </div>
 
           {/* Stato */}

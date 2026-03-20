@@ -12,6 +12,7 @@ export interface GetEventiParams {
   stato?: number
   data_da?: string
   data_a?: string
+  id_location?: number
 }
 
 export const getEventi = async (params?: GetEventiParams): Promise<EventoResponse[]> => {
@@ -33,6 +34,11 @@ export const createEvento = async (body: EventoCreate): Promise<{ id: number }> 
 
 export const getLocation = async (): Promise<LocationItem[]> => {
   const { data } = await gestionale.get<LocationItem[]>('/lookup/location')
+  return data
+}
+
+export const createLocation = async (location: string): Promise<LocationItem> => {
+  const { data } = await gestionale.post<LocationItem>('/lookup/location', { location })
   return data
 }
 

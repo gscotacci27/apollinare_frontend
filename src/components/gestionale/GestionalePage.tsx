@@ -1,23 +1,34 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { useState } from 'react'
-import { Plus, Loader2, CalendarX, ArrowUpDown } from 'lucide-react'
+import { Plus, Loader2, CalendarX, ArrowUpDown, SlidersHorizontal, X } from 'lucide-react'
 import { useEventi } from '@/hooks/useEventi'
 import { useAuth } from '@/contexts/AuthContext'
 import { FILTRI_STATO } from '@/types/gestionale'
 import { EventCard } from './EventCard'
 import { NuovoEventoModal } from './NuovoEventoModal'
+import { LocationCombobox } from './LocationCombobox'
 
 export const GestionalePage = () => {
   const { isOrganizzatore } = useAuth()
   const [showModal, setShowModal] = useState(false)
+  const [showFilters, setShowFilters] = useState(false)
 
-  // Stato filtro e sort in URL → sopravvivono alla navigazione avanti/indietro
+  // Tutti i parametri in URL → sopravvivono alla navigazione avanti/indietro
   const [searchParams, setSearchParams] = useSearchParams()
-  const statoFilter = searchParams.get('stato') ? Number(searchParams.get('stato')) : undefined
-  const sortOrder = (searchParams.get('sort') ?? 'asc') as 'asc' | 'desc'
+  const statoFilter   = searchParams.get('stato')      ? Number(searchParams.get('stato'))      : undefined
+  const sortOrder     = (searchParams.get('sort')      ?? 'asc') as 'asc' | 'desc'
+  const dataDa        = searchParams.get('data_da')    ?? undefined
+  const dataA         = searchParams.get('data_a')     ?? undefined
+  const idLocation    = searchParams.get('id_location') ? Number(searchParams.get('id_location')) : undefined
 
-  const { data: eventi = [], isLoading, isError } = useEventi(statoFilter)
+  const hasActiveFilters = !!(dataDa || dataA || idLocation)
+
+  const { data: eventi = [], isLoading, isError } = useEventi({
+    stato:       statoFilter,
+    data_da:     dataDa,
+    data_a:      dataA,
+    id_location: idLocation,
+  })
 
   const eventiSorted = useMemo(() => {
     return [...eventi].sort((a, b) => {
@@ -27,10 +38,19 @@ export const GestionalePage = () => {
     })
   }, [eventi, sortOrder])
 
-  const handleFilterChange = (value: number | undefined) => {
+  const setParam = (key: string, value: string | undefined) => {
     setSearchParams((p) => {
-      if (value === undefined) p.delete('stato')
-      else p.set('stato', String(value))
+      if (value === undefined || value === '') p.delete(key)
+      else p.set(key, value)
+      return p
+    })
+  }
+
+  const clearFilters = () => {
+    setSearchParams((p) => {
+      p.delete('data_da')
+      p.delete('data_a')
+      p.delete('id_location')
       return p
     })
   }
@@ -49,11 +69,28 @@ export const GestionalePage = () => {
         <div>
           <h1 className="text-sm font-semibold text-slate-100">Eventi</h1>
           {!isLoading && (
-            <p className="text-xs text-slate-500 mt-0.5">{eventi.length} evento{eventi.length !== 1 ? 'i' : ''}</p>
+            <p className="text-xs text-slate-500 mt-0.5">{eventi.length} event{eventi.length !== 1 ? 'i' : 'o'}</p>
           )}
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Filter toggle */}
+          <button
+            onClick={() => setShowFilters((v) => !v)}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md transition-colors ${
+              showFilters || hasActiveFilters
+                ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/40'
+                : 'bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200'
+            }`}
+            title="Filtri avanzati"
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5" />
+            Filtri
+            {hasActiveFilters && (
+              <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 ml-0.5" />
+            )}
+          </button>
+
           {/* Sort toggle */}
           <button
             onClick={toggleSort}
@@ -81,7 +118,7 @@ export const GestionalePage = () => {
         {FILTRI_STATO.map((f) => (
           <button
             key={String(f.value)}
-            onClick={() => handleFilterChange(f.value)}
+            onClick={() => setParam('stato', f.value !== undefined ? String(f.value) : undefined)}
             className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
               statoFilter === f.value
                 ? 'bg-indigo-600 text-white'
@@ -92,6 +129,55 @@ export const GestionalePage = () => {
           </button>
         ))}
       </div>
+
+      {/* Filtri avanzati (data + location) */}
+      {showFilters && (
+        <div className="px-6 py-3 border-b border-slate-800 shrink-0 bg-slate-900/50">
+          <div className="flex items-end gap-3 flex-wrap">
+            {/* Data da */}
+            <div>
+              <label className="block text-xs font-medium text-slate-500 mb-1">Dal</label>
+              <input
+                type="date"
+                value={dataDa ?? ''}
+                onChange={(e) => setParam('data_da', e.target.value || undefined)}
+                className="bg-slate-800 border border-slate-700 rounded-md px-3 py-1.5 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition-colors"
+              />
+            </div>
+
+            {/* Data a */}
+            <div>
+              <label className="block text-xs font-medium text-slate-500 mb-1">Al</label>
+              <input
+                type="date"
+                value={dataA ?? ''}
+                onChange={(e) => setParam('data_a', e.target.value || undefined)}
+                className="bg-slate-800 border border-slate-700 rounded-md px-3 py-1.5 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition-colors"
+              />
+            </div>
+
+            {/* Location */}
+            <div className="min-w-48">
+              <label className="block text-xs font-medium text-slate-500 mb-1">Location</label>
+              <LocationCombobox
+                value={idLocation ?? null}
+                onChange={(id) => setParam('id_location', id !== null ? String(id) : undefined)}
+              />
+            </div>
+
+            {/* Clear filters */}
+            {hasActiveFilters && (
+              <button
+                onClick={clearFilters}
+                className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-slate-400 hover:text-slate-200 transition-colors mb-0.5"
+              >
+                <X className="w-3.5 h-3.5" />
+                Rimuovi filtri
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Lista */}
       <div className="flex-1 overflow-y-auto px-6 py-4">
@@ -109,7 +195,7 @@ export const GestionalePage = () => {
           <div className="flex flex-col items-center justify-center gap-2 py-20 text-slate-500">
             <CalendarX className="w-8 h-8 text-slate-700" />
             <p className="text-sm">Nessun evento trovato</p>
-            {isOrganizzatore && (
+            {isOrganizzatore && !hasActiveFilters && (
               <button
                 onClick={() => setShowModal(true)}
                 className="mt-1 text-xs text-indigo-400 hover:text-indigo-300 transition-colors"

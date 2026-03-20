@@ -1,3 +1,5 @@
+import type { GetEventiParams } from './gestionale'
+
 export const queryKeys = {
   emails: {
     all: ['emails'] as const,
@@ -6,8 +8,8 @@ export const queryKeys = {
   },
   eventi: {
     all: ['eventi'] as const,
-    // stato nel key → cache separata per ogni filtro (nessun mixing)
-    list: (stato?: number) => [...queryKeys.eventi.all, 'list', stato ?? 'all'] as const,
+    // Tutti i filtri nel key → cache separata per ogni combinazione (nessun mixing)
+    list: (filters: GetEventiParams) => [...queryKeys.eventi.all, 'list', filters] as const,
     detail: (id: number) => [...queryKeys.eventi.all, 'detail', id] as const,
   },
   lookup: {
