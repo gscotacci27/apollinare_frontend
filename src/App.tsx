@@ -12,6 +12,9 @@ import { ErrorBoundary } from '@/components/ErrorBoundary'
 const DashboardPage = lazy(() =>
   import('@/components/dashboard/DashboardPage').then((m) => ({ default: m.DashboardPage })),
 )
+const ImpostazioniPage = lazy(() =>
+  import('@/components/impostazioni/ImpostazioniPage').then((m) => ({ default: m.ImpostazioniPage })),
+)
 const ChatbotPage = lazy(() =>
   import('@/components/chatbot/ChatbotPage').then((m) => ({ default: m.ChatbotPage })),
 )
@@ -80,6 +83,7 @@ function AppRoutes() {
           <Route path="gestionale/location" element={<LocationiPage />} />
           <Route path="gestionale/eventi/:id/lista-carico" element={<ListaCaricaPage />} />
           <Route path="gestionale/eventi/:id/dettagli" element={<SchedaEventoPage />} />
+          <Route path="impostazioni" element={<ImpostazioniPage />} />
         </Route>
       </Routes>
     </Suspense>

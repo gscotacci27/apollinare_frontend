@@ -24,6 +24,13 @@ export const queryKeys = {
     articoli: ['lookup', 'articoli'] as const,
     sezioni: ['lookup', 'sezioni'] as const,
   },
+  tabelle: {
+    location: ['tabelle', 'location'] as const,
+    locationSimili: (id: number) => ['tabelle', 'location', id, 'simili'] as const,
+    articoli: (search?: string) => ['tabelle', 'articoli', search ?? ''] as const,
+    sezioni: ['tabelle', 'sezioni'] as const,
+    ospiti: ['tabelle', 'ospiti'] as const,
+  },
   dashboard: {
     kpi: ['dashboard', 'kpi'] as const,
     prossimiEventi: ['dashboard', 'prossimi-eventi'] as const,
