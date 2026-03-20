@@ -2,6 +2,13 @@ export enum IntentType {
   CLARIFICATION = 'CLARIFICATION',
   QUOTE_REQUEST = 'QUOTE_REQUEST',
   APPOINTMENT = 'APPOINTMENT',
+  UNDEFINED = 'UNDEFINED',
+}
+
+export enum SenderCategory {
+  CLIENT = 'client',
+  SUPPLIER = 'supplier',
+  OTHER = 'other',
 }
 
 export enum EmailStatus {
@@ -16,6 +23,7 @@ export interface Email {
   sender_email: string
   sender_name: string
   detected_intent: IntentType
+  sender_category: SenderCategory
   draft_reply: string
   status: EmailStatus
   rejection_reason: string | null

@@ -29,7 +29,7 @@ export function AnagraficaTab({ evento }: Props) {
     data: evento.data ?? '',
     indirizzo: evento.indirizzo ?? '',
     cod_tipo: evento.cod_tipo ?? '',
-    id_location: undefined,
+    id_location: evento.id_location ?? undefined,
     stato: evento.stato,
     descrizione: evento.descrizione ?? '',
     note: evento.note ?? '',

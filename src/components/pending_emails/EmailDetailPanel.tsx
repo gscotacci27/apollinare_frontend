@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { format, formatDistanceToNow } from 'date-fns'
 import { Mail } from 'lucide-react'
 import { IntentBadge } from './IntentBadge'
+import { SenderBadge } from './SenderBadge'
 import { Button } from '@/components/ui/Button'
 import type { Email } from '@/types/email'
 
@@ -67,7 +68,10 @@ export const EmailDetailPanel = ({ email, onApprove, onReject, isPending }: Emai
                   </p>
                 </div>
               </div>
-              <IntentBadge intent={email.detected_intent} />
+              <div className="flex items-center gap-1.5">
+                <SenderBadge category={email.sender_category} />
+                <IntentBadge intent={email.detected_intent} />
+              </div>
             </div>
 
             {/* Scrollable body */}

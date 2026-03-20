@@ -2,6 +2,7 @@ import { Check, X } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { motion } from 'framer-motion'
 import { IntentBadge } from './IntentBadge'
+import { SenderBadge } from './SenderBadge'
 import { cn } from '@/lib/utils'
 import type { Email } from '@/types/email'
 
@@ -75,8 +76,11 @@ export const EmailCard = ({ email, index, selected, onClick, onApprove, onReject
           {/* Email address */}
           <p className="text-xs text-slate-400 truncate mb-2">{email.sender_email}</p>
 
-          {/* Intent badge */}
-          <IntentBadge intent={email.detected_intent} className="mb-2" />
+          {/* Badges */}
+          <div className="flex items-center gap-1.5 mb-2">
+            <SenderBadge category={email.sender_category} />
+            <IntentBadge intent={email.detected_intent} />
+          </div>
 
           {/* Draft preview */}
           <p className="text-xs text-slate-500 leading-relaxed line-clamp-2">

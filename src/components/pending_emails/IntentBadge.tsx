@@ -14,7 +14,13 @@ const intentConfig: Record<IntentType, { label: string; className: string }> = {
     label: 'Appointment',
     className: 'bg-emerald-100 text-emerald-700',
   },
+  [IntentType.UNDEFINED]: {
+    label: 'Non classificato',
+    className: 'bg-slate-100 text-slate-500',
+  },
 }
+
+const FALLBACK_CONFIG = { label: 'Non classificato', className: 'bg-slate-100 text-slate-500' }
 
 interface IntentBadgeProps {
   intent: IntentType
@@ -22,7 +28,7 @@ interface IntentBadgeProps {
 }
 
 export const IntentBadge = ({ intent, className }: IntentBadgeProps) => {
-  const config = intentConfig[intent]
+  const config = intentConfig[intent] ?? FALLBACK_CONFIG
   return (
     <span
       className={cn(
