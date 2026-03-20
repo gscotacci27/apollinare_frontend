@@ -24,4 +24,12 @@ export const queryKeys = {
     articoli: ['lookup', 'articoli'] as const,
     sezioni: ['lookup', 'sezioni'] as const,
   },
+  dashboard: {
+    kpi: ['dashboard', 'kpi'] as const,
+    prossimiEventi: ['dashboard', 'prossimi-eventi'] as const,
+    listeAperte: ['dashboard', 'liste-aperte'] as const,
+    caricoLavoro: ['dashboard', 'carico-lavoro'] as const,
+    articoliSottoScorta: ['dashboard', 'articoli-sotto-scorta'] as const,
+    attivitaRecenti: ['dashboard', 'attivita-recenti'] as const,
+  },
 }

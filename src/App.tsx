@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from 'react-hot-toast'
 import { GoogleOAuthProvider } from '@react-oauth/google'
@@ -9,6 +9,9 @@ import { LoginPage } from '@/components/auth/LoginPage'
 import { Layout } from '@/components/layout/Layout'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 
+const DashboardPage = lazy(() =>
+  import('@/components/dashboard/DashboardPage').then((m) => ({ default: m.DashboardPage })),
+)
 const ChatbotPage = lazy(() =>
   import('@/components/chatbot/ChatbotPage').then((m) => ({ default: m.ChatbotPage })),
 )
@@ -67,7 +70,8 @@ function AppRoutes() {
     <Suspense fallback={<Fallback />}>
       <Routes>
         <Route element={<Layout />}>
-          <Route index element={<Navigate to="/gestionale" replace />} />
+          <Route index element={<DashboardPage />} />
+          <Route path="dashboard" element={<DashboardPage />} />
           <Route path="chatbot" element={<ChatbotPage />} />
           <Route path="emails" element={<PendingEmailsPage />} />
           {/* Gestionale — SF-001+ */}

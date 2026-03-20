@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { MessageSquare, Mail, LogOut, ClipboardList, MapPin, Moon, Sun, Palette } from 'lucide-react'
+import { MessageSquare, Mail, LogOut, ClipboardList, MapPin, Moon, Sun, Palette, LayoutDashboard, BarChart2, Settings } from 'lucide-react'
 import { useEmails } from '@/hooks/useEmails'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTheme, type Theme } from '@/contexts/ThemeContext'
@@ -25,8 +25,10 @@ export const Sidebar = () => {
 
       {/* Nav */}
       <nav className="flex-1 px-2 py-4 space-y-1">
+        {/* Dashboard */}
         <NavLink
-          to="/chatbot"
+          to="/"
+          end
           className={({ isActive }) =>
             `flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
               isActive
@@ -35,12 +37,11 @@ export const Sidebar = () => {
             }`
           }
         >
-          <MessageSquare className="w-4 h-4 shrink-0" />
-          <span className="flex-1">Chatbot</span>
-          <span className="text-xs font-medium bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded-full">
-            Soon
-          </span>
+          <LayoutDashboard className="w-4 h-4 shrink-0" />
+          <span className="flex-1">Dashboard</span>
         </NavLink>
+
+        <div className="h-px bg-slate-800 mx-1 my-2" />
 
         <NavLink
           to="/emails"
@@ -53,7 +54,7 @@ export const Sidebar = () => {
           }
         >
           <Mail className="w-4 h-4 shrink-0" />
-          <span className="flex-1">Pending Emails</span>
+          <span className="flex-1">Email</span>
           {pendingCount > 0 && (
             <span className="text-xs font-medium bg-indigo-500/20 text-indigo-400 px-1.5 py-0.5 rounded-full min-w-5 text-center">
               {pendingCount}
@@ -73,7 +74,7 @@ export const Sidebar = () => {
           }
         >
           <ClipboardList className="w-4 h-4 shrink-0" />
-          <span className="flex-1">Gestionale</span>
+          <span className="flex-1">Eventi</span>
         </NavLink>
 
         <NavLink
@@ -89,6 +90,29 @@ export const Sidebar = () => {
           <MapPin className="w-4 h-4 shrink-0" />
           <span className="flex-1">Location</span>
         </NavLink>
+
+        <div className="h-px bg-slate-800 mx-1 my-2" />
+
+        {/* Chatbot */}
+        <div className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-slate-600 cursor-default">
+          <MessageSquare className="w-4 h-4 shrink-0" />
+          <span className="flex-1">Chatbot</span>
+          <span className="text-xs font-medium bg-slate-800 text-slate-600 px-1.5 py-0.5 rounded-full">Soon</span>
+        </div>
+
+        {/* Reportistica */}
+        <div className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-slate-600 cursor-default">
+          <BarChart2 className="w-4 h-4 shrink-0" />
+          <span className="flex-1">Reportistica</span>
+          <span className="text-xs font-medium bg-slate-800 text-slate-600 px-1.5 py-0.5 rounded-full">Soon</span>
+        </div>
+
+        {/* Impostazioni */}
+        <div className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-slate-600 cursor-default">
+          <Settings className="w-4 h-4 shrink-0" />
+          <span className="flex-1">Impostazioni</span>
+          <span className="text-xs font-medium bg-slate-800 text-slate-600 px-1.5 py-0.5 rounded-full">Soon</span>
+        </div>
       </nav>
 
       {/* Theme toggle */}
