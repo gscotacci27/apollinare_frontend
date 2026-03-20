@@ -14,6 +14,12 @@ export interface EventoResponse {
 }
 
 export interface PatchEventoBody {
+  stato?: number | null
+  descrizione?: string | null
+  cliente?: string | null
+  data?: string | null
+  ora_evento?: string | null
+  id_location?: number | null
   tot_ospiti?: number | null
   perc_sedute_aper?: number | null
 }

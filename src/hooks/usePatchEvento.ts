@@ -15,11 +15,19 @@ export const usePatchEvento = (idEvento: number, onSuccess?: () => void) => {
           if (!old) return old
           return {
             ...old,
-            ...(body.tot_ospiti != null       ? { tot_ospiti: body.tot_ospiti }             : {}),
-            ...(body.perc_sedute_aper != null ? { perc_sedute_aper: body.perc_sedute_aper } : {}),
+            ...(body.stato            != null ? { stato: body.stato }                         : {}),
+            ...(body.descrizione      != null ? { descrizione: body.descrizione }             : {}),
+            ...(body.cliente          != null ? { cliente: body.cliente }                     : {}),
+            ...(body.data             != null ? { data: body.data }                           : {}),
+            ...(body.ora_evento       != null ? { ora_evento: body.ora_evento }               : {}),
+            ...(body.id_location      != null ? { id_location: body.id_location }             : {}),
+            ...(body.tot_ospiti       != null ? { tot_ospiti: body.tot_ospiti }               : {}),
+            ...(body.perc_sedute_aper != null ? { perc_sedute_aper: body.perc_sedute_aper }   : {}),
           }
         },
       )
+      // Invalida la lista eventi (stato/date cambiano)
+      qc.invalidateQueries({ queryKey: [...queryKeys.eventi.all, 'list'] })
       onSuccess?.()
     },
   })

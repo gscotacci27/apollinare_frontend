@@ -12,7 +12,7 @@ export const Sidebar = () => {
     <aside className="w-56 shrink-0 bg-slate-950 flex flex-col h-full border-r border-slate-800">
       {/* Logo */}
       <div className="px-4 py-5 border-b border-slate-800">
-        <span className="text-white font-semibold text-sm tracking-wide">Reply Scheduler</span>
+        <span className="text-white font-semibold text-sm tracking-wide">Apollinare</span>
       </div>
 
       {/* Nav */}

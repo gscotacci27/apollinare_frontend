@@ -88,3 +88,18 @@ export const updateArticolo = async (
 export const deleteArticolo = async (idEvento: number, itemId: number): Promise<void> => {
   await gestionale.delete(`/eventi/${idEvento}/lista/${itemId}`)
 }
+
+export const recalcolaLista = async (idEvento: number): Promise<{ recalculated: number }> => {
+  const { data } = await gestionale.post<{ recalculated: number }>(`/eventi/${idEvento}/lista/recalcola`)
+  return data
+}
+
+export const salvaLista = async (idEvento: number): Promise<{ saved: number }> => {
+  const { data } = await gestionale.post<{ saved: number }>(`/eventi/${idEvento}/lista/salva`)
+  return data
+}
+
+export const ricaricaLista = async (idEvento: number): Promise<ListaCaricaItem[]> => {
+  const { data } = await gestionale.post<ListaCaricaItem[]>(`/eventi/${idEvento}/lista/ricarica`)
+  return data
+}
