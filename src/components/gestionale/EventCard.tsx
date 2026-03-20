@@ -26,7 +26,7 @@ export const EventCard = ({ evento }: Props) => {
           {/* Titolo + stato */}
           <div className="flex items-center gap-2 flex-wrap mb-1">
             <span className="font-medium text-slate-100 truncate">
-              {evento.descrizione ?? '(senza titolo)'}
+              {evento.descrizione ?? evento.cliente ?? '(senza titolo)'}
             </span>
             <StatusBadge stato={evento.stato} />
           </div>
@@ -48,7 +48,8 @@ export const EventCard = ({ evento }: Props) => {
                 {evento.tot_ospiti} ospiti
               </span>
             )}
-            {evento.cliente && (
+            {/* Mostra cliente come sottotitolo solo se descrizione è già nel titolo */}
+            {evento.descrizione && evento.cliente && (
               <span className="truncate">{evento.cliente}</span>
             )}
           </div>

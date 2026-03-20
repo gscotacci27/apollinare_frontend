@@ -54,7 +54,7 @@ export const EventoDetailPage = () => {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="text-sm font-semibold text-slate-100 truncate">
-              {evento.descrizione ?? '(senza titolo)'}
+              {evento.descrizione ?? evento.cliente ?? '(senza titolo)'}
             </h1>
             <StatusBadge stato={evento.stato} />
           </div>
