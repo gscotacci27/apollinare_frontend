@@ -26,14 +26,16 @@ export const GestionalePage = () => {
   // Normale: data_da = oggi di default (mostra eventi futuri)
   const today = new Date().toISOString().slice(0, 10)
 
-  // dataDa è "attivo" solo se l'utente ha impostato una data diversa dal default (oggi)
-  const hasActiveFilters = !!(
-    (dataDa && dataDa !== today) || dataA || idLocation
-  )
+  // dataDa è "attivo" solo se l'utente ha impostato una data esplicita
+  const hasActiveFilters = !!(dataDa || dataA || idLocation)
+
+  // data_da default = oggi solo nella vista "Tutti" (nessun filtro stato esplicito)
+  // Se l'utente seleziona uno stato specifico, mostra tutti gli eventi di quello stato
+  const defaultDataDa = (!isPassati && statoFilter === undefined) ? today : undefined
 
   const { data: eventi = [], isLoading, isError } = useEventi({
     stato:       isPassati ? 'confermato' : statoFilter,
-    data_da:     isPassati ? undefined : (dataDa ?? today),
+    data_da:     isPassati ? undefined : (dataDa ?? defaultDataDa),
     data_a:      isPassati ? today : dataA,
     id_location: idLocation,
   })
