@@ -6,7 +6,7 @@ import { getEvento, getLocation } from '@/services/gestionale'
 import { queryKeys } from '@/services/queryKeys'
 import { StatusBadge } from './StatusBadge'
 import { usePatchEvento } from '@/hooks/usePatchEvento'
-import { STATI_GESTIBILI } from '@/types/gestionale'
+import { STATI_GESTIBILI, type StatoEvento } from '@/types/gestionale'
 import { format, parseISO } from 'date-fns'
 import { it } from 'date-fns/locale'
 
@@ -15,7 +15,7 @@ import { it } from 'date-fns/locale'
 interface EditPanelProps {
   idEvento: number
   initial: {
-    stato: number
+    stato: StatoEvento
     descrizione: string | null
     cliente: string | null
     data: string | null
@@ -29,7 +29,7 @@ interface EditPanelProps {
 }
 
 const EditPanel = ({ idEvento, initial, locations, onClose }: EditPanelProps) => {
-  const [stato,       setStato]       = useState(initial.stato)
+  const [stato,       setStato]       = useState<StatoEvento>(initial.stato)
   const [descrizione, setDescrizione] = useState(initial.descrizione ?? '')
   const [cliente,     setCliente]     = useState(initial.cliente ?? '')
   const [data,        setData]        = useState(initial.data ?? '')
@@ -48,7 +48,6 @@ const EditPanel = ({ idEvento, initial, locations, onClose }: EditPanelProps) =>
       data:        data        || null,
       ora_evento:  ora         || null,
       id_location: location !== '' ? location : null,
-      tot_ospiti:  ospiti,
       perc_sedute_aper: perc,
     })
   }
@@ -66,7 +65,7 @@ const EditPanel = ({ idEvento, initial, locations, onClose }: EditPanelProps) =>
     <div className="px-6 py-4 border-b border-slate-800 space-y-3 bg-indigo-950/20">
       <div className="grid grid-cols-2 gap-3">
         {field('Stato',
-          <select value={stato} onChange={(e) => setStato(Number(e.target.value))} className={cls}>
+          <select value={stato} onChange={(e) => setStato(e.target.value as StatoEvento)} className={cls}>
             {STATI_GESTIBILI.map((s) => (
               <option key={s.value} value={s.value}>{s.label}</option>
             ))}
@@ -221,7 +220,7 @@ export const EventoDetailPage = () => {
       <div className="px-6 py-4 space-y-2">
         <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-3">Moduli</p>
 
-        {evento.stato === 400 ? (
+        {evento.stato === 'confermato' ? (
           <Link
             to={`/gestionale/eventi/${idNum}/lista-carico`}
             className="flex items-center gap-3 px-4 py-3 bg-slate-900 border border-slate-800 rounded-lg hover:border-slate-600 transition-colors group"

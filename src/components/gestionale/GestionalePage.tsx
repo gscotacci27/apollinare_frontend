@@ -15,7 +15,7 @@ export const GestionalePage = () => {
 
   // Tutti i parametri in URL → sopravvivono alla navigazione avanti/indietro
   const [searchParams, setSearchParams] = useSearchParams()
-  const statoFilter   = searchParams.get('stato')      ? Number(searchParams.get('stato'))      : undefined
+  const statoFilter   = searchParams.get('stato') ?? undefined
   const sortOrder     = (searchParams.get('sort')      ?? 'asc') as 'asc' | 'desc'
   const dataDa        = searchParams.get('data_da')    ?? undefined
   const dataA         = searchParams.get('data_a')     ?? undefined
@@ -24,11 +24,11 @@ export const GestionalePage = () => {
 
   const hasActiveFilters = !!(dataDa || dataA || idLocation)
 
-  // Per "Storico passati": data_a = ieri, stato = 400 (Confermato)
+  // Per "Storico passati": data_a = ieri, stato = confermato
   const today = new Date().toISOString().slice(0, 10)
 
   const { data: eventi = [], isLoading, isError } = useEventi({
-    stato:       isPassati ? 400 : statoFilter,
+    stato:       isPassati ? 'confermato' : statoFilter,
     data_da:     isPassati ? undefined : dataDa,
     data_a:      isPassati ? today : dataA,
     id_location: idLocation,

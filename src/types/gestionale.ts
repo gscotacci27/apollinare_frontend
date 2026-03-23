@@ -1,11 +1,18 @@
 // ── Evento ────────────────────────────────────────────────────────────────────
 
+export type StatoEvento =
+  | 'bozza'
+  | 'in_attesa_conferma'
+  | 'in_lavorazione'
+  | 'confermato'
+  | 'annullato'
+
 export interface EventoResponse {
   id: number
   descrizione: string | null
   data: string | null        // ISO date string "YYYY-MM-DD"
   ora_evento: string | null
-  stato: number
+  stato: StatoEvento
   cliente: string | null
   id_location: number | null
   location_nome: string | null
@@ -14,13 +21,12 @@ export interface EventoResponse {
 }
 
 export interface PatchEventoBody {
-  stato?: number | null
+  stato?: StatoEvento | null
   descrizione?: string | null
   cliente?: string | null
   data?: string | null
   ora_evento?: string | null
   id_location?: number | null
-  tot_ospiti?: number | null
   perc_sedute_aper?: number | null
 }
 
@@ -29,35 +35,31 @@ export interface EventoCreate {
   data: string               // ISO date "YYYY-MM-DD"
   ora_evento?: string | null
   id_location?: number | null
-  stato: number
+  stato: StatoEvento
   cliente?: string | null
 }
 
 // ── Stato ─────────────────────────────────────────────────────────────────────
 
-// I tre stati gestibili nel nuovo sistema
 export const STATI_GESTIBILI = [
-  { value: 100, label: 'Preventivo' },
-  { value: 200, label: 'In lavorazione' },
-  { value: 400, label: 'Confermato' },
+  { value: 'in_attesa_conferma' as StatoEvento, label: 'Preventivo' },
+  { value: 'in_lavorazione'     as StatoEvento, label: 'In lavorazione' },
+  { value: 'confermato'         as StatoEvento, label: 'Confermato' },
 ] as const
 
-// Mapping completo per la visualizzazione (include stati legacy del DB Oracle)
-export const STATO_CONFIG: Record<number, { label: string; bg: string; text: string }> = {
-  100: { label: 'Preventivo',      bg: 'bg-slate-100',  text: 'text-slate-600' },
-  200: { label: 'In lavorazione',  bg: 'bg-amber-50',   text: 'text-amber-700' },
-  300: { label: 'In lavorazione',  bg: 'bg-amber-50',   text: 'text-amber-700' },
-  350: { label: 'In lavorazione',  bg: 'bg-amber-50',   text: 'text-amber-700' },
-  400: { label: 'Confermato',      bg: 'bg-green-50',   text: 'text-green-700' },
-  900: { label: 'Annullato',       bg: 'bg-red-50',     text: 'text-red-600'   },
+export const STATO_CONFIG: Record<string, { label: string; bg: string; text: string }> = {
+  bozza:               { label: 'Bozza',         bg: 'bg-slate-100',  text: 'text-slate-500' },
+  in_attesa_conferma:  { label: 'Preventivo',     bg: 'bg-slate-100',  text: 'text-slate-600' },
+  in_lavorazione:      { label: 'In lavorazione', bg: 'bg-amber-50',   text: 'text-amber-700' },
+  confermato:          { label: 'Confermato',      bg: 'bg-green-50',   text: 'text-green-700' },
+  annullato:           { label: 'Annullato',       bg: 'bg-red-50',     text: 'text-red-600'   },
 }
 
-// Tab filtro nella EventiPage
 export const FILTRI_STATO = [
-  { value: undefined, label: 'Tutti' },
-  { value: 100,       label: 'Preventivo' },
-  { value: 200,       label: 'In lavorazione' },
-  { value: 400,       label: 'Confermato' },
+  { value: undefined,              label: 'Tutti' },
+  { value: 'in_attesa_conferma' as StatoEvento, label: 'Preventivo' },
+  { value: 'in_lavorazione'     as StatoEvento, label: 'In lavorazione' },
+  { value: 'confermato'         as StatoEvento, label: 'Confermato' },
 ] as const
 
 // Valore speciale per il filtro "storico" (passati)

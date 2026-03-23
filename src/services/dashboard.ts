@@ -16,7 +16,7 @@ export interface ProssimoEvento {
   descrizione: string | null
   data: string | null
   ora_evento: string | null
-  stato: number
+  stato: string
   cliente: string | null
   location_nome: string | null
   tot_ospiti: number | null
@@ -26,7 +26,7 @@ export interface ListaApertaItem {
   id: number
   descrizione: string | null
   data: string | null
-  stato: number
+  stato: string
   cliente: string | null
   location_nome: string | null
   tot_ospiti: number | null
@@ -54,7 +54,7 @@ export interface AttivitaItem {
   descrizione: string | null
   cliente: string | null
   data: string | null
-  stato?: number
+  stato?: string
   id_evento?: number
   importo?: number
 }

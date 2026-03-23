@@ -21,7 +21,6 @@ export const usePatchEvento = (idEvento: number, onSuccess?: () => void) => {
             ...(body.data             != null ? { data: body.data }                           : {}),
             ...(body.ora_evento       != null ? { ora_evento: body.ora_evento }               : {}),
             ...(body.id_location      != null ? { id_location: body.id_location }             : {}),
-            ...(body.tot_ospiti       != null ? { tot_ospiti: body.tot_ospiti }               : {}),
             ...(body.perc_sedute_aper != null ? { perc_sedute_aper: body.perc_sedute_aper }   : {}),
           }
         },

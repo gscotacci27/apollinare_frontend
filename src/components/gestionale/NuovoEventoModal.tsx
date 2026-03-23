@@ -1,7 +1,7 @@
 import { useState, FormEvent } from 'react'
 import { X } from 'lucide-react'
 import { useCreateEvento } from '@/hooks/useCreateEvento'
-import { STATI_GESTIBILI } from '@/types/gestionale'
+import { STATI_GESTIBILI, type StatoEvento } from '@/types/gestionale'
 import { LocationCombobox } from './LocationCombobox'
 
 interface Props {
@@ -15,7 +15,7 @@ export const NuovoEventoModal = ({ onClose, onCreated }: Props) => {
     data: '',
     ora_evento: '',
     id_location: null as number | null,
-    stato: 100,
+    stato: 'in_attesa_conferma' as StatoEvento,
     cliente: '',
   })
   const [dateError, setDateError] = useState('')
@@ -125,7 +125,7 @@ export const NuovoEventoModal = ({ onClose, onCreated }: Props) => {
             </label>
             <select
               value={form.stato}
-              onChange={(e) => set('stato', Number(e.target.value))}
+              onChange={(e) => set('stato', e.target.value as StatoEvento)}
               className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition-colors"
             >
               {STATI_GESTIBILI.map((s) => (

@@ -19,12 +19,12 @@ function fmtData(iso: string | null): string {
   return `${d}/${m}/${y}`
 }
 
-function statoLabel(stato: number): string {
-  return STATO_CONFIG[stato]?.label ?? String(stato)
+function statoLabel(stato: string): string {
+  return STATO_CONFIG[stato]?.label ?? stato
 }
 
-function StatoBadge({ stato }: { stato: number }) {
-  const cfg = STATO_CONFIG[stato] ?? { bg: 'bg-slate-100', text: 'text-slate-600', label: String(stato) }
+function StatoBadge({ stato }: { stato: string }) {
+  const cfg = STATO_CONFIG[stato] ?? { bg: 'bg-slate-100', text: 'text-slate-600', label: stato }
   return (
     <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-medium ${cfg.bg} ${cfg.text}`}>
       {cfg.label}

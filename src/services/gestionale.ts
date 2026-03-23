@@ -13,7 +13,7 @@ const gestionale = axios.create({
 // ── SF-001 Eventi ─────────────────────────────────────────────────────────────
 
 export interface GetEventiParams {
-  stato?: number
+  stato?: string
   data_da?: string
   data_a?: string
   id_location?: number

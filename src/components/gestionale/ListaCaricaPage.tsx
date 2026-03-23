@@ -131,7 +131,7 @@ const ParametriPanel = ({
           className="w-16 bg-slate-800 border border-slate-600 rounded px-2 py-1 text-sm text-slate-100 text-center focus:outline-none focus:border-indigo-500"
         />
       </div>
-      <button onClick={() => mutate({ tot_ospiti: ospiti, perc_sedute_aper: perc })} disabled={isPending || isRecalcing}
+      <button onClick={() => mutate({ perc_sedute_aper: perc })} disabled={isPending || isRecalcing}
         className="p-1.5 rounded text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-50 transition-colors">
         {isPending || isRecalcing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
       </button>
@@ -646,7 +646,7 @@ export const ListaCaricaPage = () => {
 
   const markDirty = useCallback(() => setIsDirty(true), [])
 
-  const notConfirmed = evento && evento.stato !== 400
+  const notConfirmed = evento && evento.stato !== 'confermato'
 
   return (
     <div className="flex flex-col h-full bg-slate-950">
