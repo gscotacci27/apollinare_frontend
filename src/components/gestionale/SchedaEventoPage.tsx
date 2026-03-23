@@ -20,7 +20,7 @@ import {
   ricaricaScheda,
 } from '@/services/gestionale'
 import { queryKeys } from '@/services/queryKeys'
-import type { OspiteItem, ExtraItem, AccontoItem, DegustazioneItem, PreventivoCalc, SchedaResponse } from '@/types/gestionale'
+import type { OspiteItem, ExtraItem, AccontoItem, DegustazioneItem, PreventivoCalc, SchedaResponse, ArticoloCostoItem } from '@/types/gestionale'
 import toast from 'react-hot-toast'
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -43,6 +43,7 @@ const PreventivoCard = ({ prev, idEvento, onDirty, onScontoChange, onTotaleChang
   const [scontoVal, setScontoVal]   = useState(prev.sconto_totale)
   const [editTotale, setEditTotale] = useState(false)
   const [totaleVal, setTotaleVal]   = useState(prev.totale_manuale ?? prev.totale_netto)
+  const [showArticoli, setShowArticoli] = useState(false)
 
   const { mutate: doSconto } = useMutation({
     mutationFn: (v: number) => updateSconto(idEvento, v),
@@ -57,7 +58,7 @@ const PreventivoCard = ({ prev, idEvento, onDirty, onScontoChange, onTotaleChang
 
   const cells = [
     { label: 'Ospiti',     value: prev.ospiti_subtotale },
-    { label: 'Articoli',   value: prev.articoli_subtotale },
+    { label: 'Articoli',   value: prev.articoli_subtotale, clickable: prev.articoli_lista.length > 0 },
     { label: 'Extra',      value: prev.extra_subtotale },
     ...(prev.degustazioni_detraibili > 0
       ? [{ label: 'Degust. −', value: -prev.degustazioni_detraibili }]
@@ -71,9 +72,15 @@ const PreventivoCard = ({ prev, idEvento, onDirty, onScontoChange, onTotaleChang
       {/* Riga cifre */}
       <div className={`grid divide-x divide-slate-800 text-center text-xs`}
            style={{ gridTemplateColumns: `repeat(${cells.length}, minmax(0, 1fr))` }}>
-        {cells.map(({ label, value, highlight }) => (
-          <div key={label} className="px-2 py-2.5">
-            <p className="text-slate-500 uppercase tracking-wide text-[10px] mb-1">{label}</p>
+        {cells.map(({ label, value, highlight, clickable }) => (
+          <div
+            key={label}
+            className={`px-2 py-2.5 ${clickable ? 'cursor-pointer hover:bg-slate-800/60' : ''}`}
+            onClick={clickable ? () => setShowArticoli((v) => !v) : undefined}
+          >
+            <p className="text-slate-500 uppercase tracking-wide text-[10px] mb-1">
+              {label}{clickable && <span className="ml-0.5 text-indigo-500">{showArticoli ? '▲' : '▼'}</span>}
+            </p>
             <p className={`font-semibold tabular-nums text-sm ${
               highlight
                 ? value >= 0 ? 'text-emerald-400' : 'text-red-400'
@@ -84,6 +91,21 @@ const PreventivoCard = ({ prev, idEvento, onDirty, onScontoChange, onTotaleChang
           </div>
         ))}
       </div>
+
+      {/* Dettaglio articoli */}
+      {showArticoli && prev.articoli_lista.length > 0 && (
+        <div className="border-t border-slate-800 px-4 py-2 space-y-0.5 bg-slate-950/40">
+          {prev.articoli_lista.map((a: ArticoloCostoItem) => (
+            <div key={a.cod_articolo} className="flex items-baseline justify-between gap-2 text-xs py-0.5">
+              <span className="text-slate-400 truncate">{a.descrizione ?? a.cod_articolo}</span>
+              <span className="text-slate-500 shrink-0 tabular-nums">
+                {a.qta % 1 === 0 ? a.qta : a.qta.toFixed(2)} × {fmtEuro(a.costo_uni)}
+              </span>
+              <span className="text-slate-200 shrink-0 tabular-nums font-medium">{fmtEuro(a.subtotale)}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Riga totale + sconto + totale manuale */}
       <div className="border-t border-slate-800 px-4 py-2.5 flex items-center gap-4 flex-wrap">

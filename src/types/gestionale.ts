@@ -174,9 +174,18 @@ export interface DegustazioneItem {
   note: string | null
 }
 
+export interface ArticoloCostoItem {
+  cod_articolo: string
+  descrizione: string | null
+  qta: number
+  costo_uni: number
+  subtotale: number
+}
+
 export interface PreventivoCalc {
   ospiti_subtotale: number
   articoli_subtotale: number
+  articoli_lista: ArticoloCostoItem[]
   extra_subtotale: number
   degustazioni_detraibili: number
   sconto_totale: number

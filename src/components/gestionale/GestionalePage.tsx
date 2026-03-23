@@ -22,14 +22,18 @@ export const GestionalePage = () => {
   const idLocation    = searchParams.get('id_location') ? Number(searchParams.get('id_location')) : undefined
   const isPassati     = searchParams.get('passati') === '1'
 
-  const hasActiveFilters = !!(dataDa || dataA || idLocation)
-
-  // Per "Storico passati": data_a = ieri, stato = confermato
+  // Per "Storico passati": data_a = oggi, stato = confermato
+  // Normale: data_da = oggi di default (mostra eventi futuri)
   const today = new Date().toISOString().slice(0, 10)
+
+  // dataDa è "attivo" solo se l'utente ha impostato una data diversa dal default (oggi)
+  const hasActiveFilters = !!(
+    (dataDa && dataDa !== today) || dataA || idLocation
+  )
 
   const { data: eventi = [], isLoading, isError } = useEventi({
     stato:       isPassati ? 'confermato' : statoFilter,
-    data_da:     isPassati ? undefined : dataDa,
+    data_da:     isPassati ? undefined : (dataDa ?? today),
     data_a:      isPassati ? today : dataA,
     id_location: idLocation,
   })
@@ -55,6 +59,8 @@ export const GestionalePage = () => {
       p.delete('data_da')
       p.delete('data_a')
       p.delete('id_location')
+      p.delete('stato')
+      p.delete('passati')
       return p
     })
   }
@@ -167,7 +173,7 @@ export const GestionalePage = () => {
               <label className="block text-xs font-medium text-slate-500 mb-1">Dal</label>
               <input
                 type="date"
-                value={dataDa ?? ''}
+                value={dataDa ?? today}
                 onChange={(e) => setParam('data_da', e.target.value || undefined)}
                 className="bg-slate-800 border border-slate-700 rounded-md px-3 py-1.5 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition-colors"
               />
