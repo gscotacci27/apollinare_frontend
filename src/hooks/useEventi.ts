@@ -10,7 +10,8 @@ import { queryKeys } from '@/services/queryKeys'
 export const useEventi = (filters: GetEventiParams = {}) =>
   useQuery({
     queryKey: queryKeys.eventi.list(filters),
-    queryFn: () => getEventi(filters),
+    // Legge i filtri dal queryKey (non dalla closure) → immune a stale closure in React 18
+    queryFn: ({ queryKey }) => getEventi(queryKey[2] as GetEventiParams),
     staleTime: 0,
-    gcTime: 0,       // scarta la cache appena il filtro cambia → mai dati stantii da query precedenti
+    gcTime: 0,
   })
