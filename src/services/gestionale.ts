@@ -33,8 +33,8 @@ export interface GetEventiParams {
   id_location?: number
 }
 
-export const getEventi = async (params?: GetEventiParams): Promise<EventoResponse[]> => {
-  const { data } = await gestionale.get<EventoResponse[]>('/eventi', { params })
+export const getEventi = async (params?: GetEventiParams, signal?: AbortSignal): Promise<EventoResponse[]> => {
+  const { data } = await gestionale.get<EventoResponse[]>('/eventi', { params, signal })
   return data
 }
 

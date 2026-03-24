@@ -10,8 +10,9 @@ import { queryKeys } from '@/services/queryKeys'
 export const useEventi = (filters: GetEventiParams = {}) =>
   useQuery({
     queryKey: queryKeys.eventi.list(filters),
-    // Legge i filtri dal queryKey (non dalla closure) → immune a stale closure in React 18
-    queryFn: ({ queryKey }) => getEventi(queryKey[2] as GetEventiParams),
-    staleTime: 0,
-    gcTime: 0,
+    // signal cancella la richiesta HTTP se la queryKey cambia prima che risponda
+    queryFn: ({ queryKey, signal }) => getEventi(queryKey[2] as GetEventiParams, signal),
+    staleTime: Infinity,       // Mai stale → nessun background refetch su re-render
+    gcTime: 0,                 // Rimuove la cache subito quando non ci sono observer
+    refetchOnMount: 'always',  // Fetch fresco ad ogni mount/cambio-key (cambio filtro)
   })
