@@ -3,11 +3,10 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App'
 
+// Deregistra qualsiasi Service Worker precedente
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {
-      // SW registration failed — app still works online
-    })
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    for (const reg of registrations) reg.unregister()
   })
 }
 
