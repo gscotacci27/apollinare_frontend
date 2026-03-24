@@ -52,6 +52,17 @@ export const GestionalePage = () => {
       return sortOrder === 'asc' ? da.localeCompare(db) : db.localeCompare(da)
     })
   }, [eventi, sortOrder])
+  // eslint-disable-next-line no-console
+  console.log('[gestionale] render-list', eventiSorted.map((e) => ({ id: e.id, data: e.data, stato: e.stato })))
+
+  const listKey = [
+    statoFilter ?? 'tutti',
+    isPassati ? 'passati' : 'attivi',
+    dataDa ?? defaultDataDa ?? '',
+    dataA ?? '',
+    idLocation ?? '',
+    sortOrder,
+  ].join('|')
 
   const setParam = (key: string, value: string | undefined) => {
     setSearchParams((p) => {
@@ -251,9 +262,9 @@ export const GestionalePage = () => {
             )}
           </div>
         ) : (
-          <div className="space-y-2">
+          <div key={listKey} className="space-y-2">
             {eventiSorted.map((e) => (
-              <EventCard key={e.id} evento={e} />
+              <EventCard key={`${listKey}:${e.id}`} evento={e} />
             ))}
           </div>
         )}
