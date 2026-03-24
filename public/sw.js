@@ -1,18 +1,12 @@
-const CACHE = 'apollinare-v1';
-
-const PRECACHE = [
-  '/',
-  '/index.html',
-];
+const CACHE = 'apollinare-v2';
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE).then((cache) => cache.addAll(PRECACHE))
-  );
+  // Non pre-caching index.html: nginx lo serve con no-store, deve sempre venire dalla rete
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
+  // Elimina tutte le cache vecchie (inclusa apollinare-v1)
   event.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))
@@ -25,19 +19,14 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Never cache API calls
-  if (url.pathname.startsWith('/emails') && request.method !== 'GET') return;
+  // Solo richieste allo stesso hostname
   if (url.hostname !== self.location.hostname) return;
 
-  // Navigation requests → serve index.html (SPA)
-  if (request.mode === 'navigate') {
-    event.respondWith(
-      caches.match('/index.html').then((cached) => cached || fetch(request))
-    );
-    return;
-  }
+  // Navigazione → sempre dalla rete (nginx risponde con no-store + Clear-Site-Data)
+  // Non fare event.respondWith → il browser fa la richiesta HTTP normalmente
+  if (request.mode === 'navigate') return;
 
-  // Hashed assets (js/css/png) → cache first
+  // Asset con hash (js/css/png/svg) → cache-first (nginx li serve immutabili)
   if (/\.(js|css|png|svg|woff2?)$/.test(url.pathname)) {
     event.respondWith(
       caches.match(request).then(
