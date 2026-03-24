@@ -29,9 +29,9 @@ export const GestionalePage = () => {
   // dataDa è "attivo" solo se l'utente ha impostato una data esplicita
   const hasActiveFilters = !!(dataDa || dataA || idLocation)
 
-  // data_da default = oggi solo nella vista "Tutti" (nessun filtro stato esplicito)
-  // Se l'utente seleziona uno stato specifico, mostra tutti gli eventi di quello stato
-  const defaultDataDa = (!isPassati && statoFilter === undefined) ? today : undefined
+  // data_da default = oggi per tutte le viste (Tutti + filtri stato specifici)
+  // Solo lo Storico non usa data_da (usa data_a = oggi invece)
+  const defaultDataDa = !isPassati ? today : undefined
 
   const { data: eventi = [], isLoading, isError } = useEventi({
     stato:       isPassati ? 'confermato' : statoFilter,
