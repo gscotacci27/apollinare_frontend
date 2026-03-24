@@ -12,4 +12,5 @@ export const useEventi = (filters: GetEventiParams = {}) =>
     queryKey: queryKeys.eventi.list(filters),
     queryFn: () => getEventi(filters),
     staleTime: 0,
+    gcTime: 0,       // scarta la cache appena il filtro cambia → mai dati stantii da query precedenti
   })

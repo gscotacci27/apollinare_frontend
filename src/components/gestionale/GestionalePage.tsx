@@ -18,6 +18,7 @@ export const GestionalePage = () => {
   const statoFilter   = searchParams.get('stato') ?? undefined
   // eslint-disable-next-line no-console
   console.log('[gestionale] render | stato:', statoFilter, '| sort:', searchParams.get('sort'), '| url:', window.location.search)
+
   const sortOrder     = (searchParams.get('sort')      ?? 'asc') as 'asc' | 'desc'
   const dataDa        = searchParams.get('data_da')    ?? undefined
   const dataA         = searchParams.get('data_a')     ?? undefined
@@ -41,6 +42,8 @@ export const GestionalePage = () => {
     data_a:      isPassati ? today : dataA,
     id_location: idLocation,
   })
+  // eslint-disable-next-line no-console
+  console.log('[gestionale] data | n:', eventi.length, '| stati:', [...new Set(eventi.map(e => e.stato))], '| isLoading:', isLoading)
 
   const eventiSorted = useMemo(() => {
     return [...eventi].sort((a, b) => {
