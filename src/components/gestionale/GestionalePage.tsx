@@ -42,8 +42,8 @@ export const GestionalePage = () => {
 
   const eventiSorted = useMemo(() => {
     return [...eventi].sort((a, b) => {
-      const da = a.data!
-      const db = b.data!
+      const da = a.data ?? ''
+      const db = b.data ?? ''
       return sortOrder === 'asc' ? da.localeCompare(db) : db.localeCompare(da)
     })
   }, [eventi, sortOrder])
