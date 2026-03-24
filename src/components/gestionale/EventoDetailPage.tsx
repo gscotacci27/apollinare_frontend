@@ -159,7 +159,7 @@ export const EventoDetailPage = () => {
       {/* Header */}
       <div className="px-6 py-4 border-b border-slate-800 flex items-center gap-3 shrink-0">
         <button
-          onClick={() => navigate('/gestionale')}
+          onClick={() => navigate(-1)}
           className="text-slate-500 hover:text-slate-300 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
