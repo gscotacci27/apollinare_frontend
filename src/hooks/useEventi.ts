@@ -8,46 +8,67 @@ interface UseEventiResult {
   isError: boolean
 }
 
+interface FetchState {
+  filterKey: string   // quale filtro ha prodotto questi dati
+  data: EventoResponse[]
+  isLoading: boolean
+  isError: boolean
+}
+
 /**
  * Lista eventi con filtri opzionali.
- * Implementazione diretta senza cache React Query: ogni cambio filtro
- * avvia un fetch fresco e cancella la richiesta precedente via AbortController.
+ * Fetch diretto senza cache: ogni cambio filtro avvia un fetch fresco e
+ * cancella la richiesta precedente via AbortController.
+ * Il filterKey viene salvato nello state insieme ai dati → nessun render
+ * con dati appartenenti al filtro sbagliato.
  */
 export const useEventi = (filters: GetEventiParams = {}): UseEventiResult => {
-  const [data, setData] = useState<EventoResponse[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [isError, setIsError] = useState(false)
-
-  // Serializza i filtri per usarli come dependency stabile
+  // Serializza filtri come dep stabile (undefined → null per distinguere i valori)
   const filterKey = JSON.stringify(filters, (_, v) => (v === undefined ? null : v))
 
-  // Ref per i filtri correnti (evita stale closure nel fetch)
+  const [state, setState] = useState<FetchState>({
+    filterKey,
+    data: [],
+    isLoading: true,
+    isError: false,
+  })
+
+  // Ref ai filtri correnti per evitare stale closure nel fetch
   const filtersRef = useRef(filters)
   filtersRef.current = filters
 
   useEffect(() => {
+    const currentKey = filterKey  // cattura il key di questo ciclo
     const controller = new AbortController()
-    setIsLoading(true)
-    setIsError(false)
+
+    setState((prev) => ({
+      ...prev,
+      filterKey: currentKey,
+      isLoading: true,
+      isError: false,
+    }))
 
     getEventi(filtersRef.current, controller.signal)
       .then((result) => {
-        setData(result)
-        setIsLoading(false)
+        setState({ filterKey: currentKey, data: result, isLoading: false, isError: false })
       })
       .catch(() => {
         if (!controller.signal.aborted) {
-          setIsError(true)
-          setIsLoading(false)
+          setState((prev) => ({ ...prev, isLoading: false, isError: true }))
         }
       })
 
     return () => {
       controller.abort()
     }
-    // filterKey è la dependency: cambia ad ogni cambio filtro
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterKey])
 
-  return { data, isLoading, isError }
+  // Se il filterKey nello state non corrisponde al filterKey attuale
+  // (es. nel render intermedio prima che l'effect scatti) → mostra loading
+  if (state.filterKey !== filterKey) {
+    return { data: [], isLoading: true, isError: false }
+  }
+
+  return { data: state.data, isLoading: state.isLoading, isError: state.isError }
 }
