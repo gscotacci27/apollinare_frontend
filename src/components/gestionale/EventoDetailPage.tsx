@@ -35,7 +35,7 @@ const EditPanel = ({ idEvento, initial, locations, onClose }: EditPanelProps) =>
   const [data,        setData]        = useState(initial.data ?? '')
   const [ora,         setOra]         = useState(initial.ora_evento ?? '')
   const [location,    setLocation]    = useState<number | ''>(initial.id_location ?? '')
-  const [ospiti,      setOspiti]      = useState(initial.tot_ospiti ?? 0)
+  const ospiti = initial.tot_ospiti ?? 0  // calcolato dal DB, read-only
   const [perc,        setPerc]        = useState(initial.perc_sedute_aper ?? 0)
 
   const { mutate, isPending } = usePatchEvento(idEvento, onClose)
@@ -92,7 +92,7 @@ const EditPanel = ({ idEvento, initial, locations, onClose }: EditPanelProps) =>
           </select>
         )}
         {field('Ospiti totali',
-          <input type="number" min={0} step={1} value={ospiti} onChange={(e) => setOspiti(Number(e.target.value))} className={cls} />
+          <p className={`${cls} border-slate-700 text-slate-400 cursor-default`}>{ospiti || '—'}</p>
         )}
         {field('% in piedi (aper.)',
           <input type="number" min={0} max={100} step={1} value={perc} onChange={(e) => setPerc(Number(e.target.value))} className={cls} />
