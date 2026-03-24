@@ -10,6 +10,20 @@ const gestionale = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
+// Diagnostica temporanea — logga ogni chiamata reale al backend
+gestionale.interceptors.request.use((config) => {
+  // eslint-disable-next-line no-console
+  console.log('[axios] →', config.method?.toUpperCase(), config.url, config.params ?? {})
+  return config
+})
+gestionale.interceptors.response.use((res) => {
+  const data = res.data
+  const stati = Array.isArray(data) ? [...new Set(data.map((e: { stato: string }) => e.stato))] : '—'
+  // eslint-disable-next-line no-console
+  console.log('[axios] ←', res.config.url, res.config.params, '| n:', Array.isArray(data) ? data.length : '?', '| stati:', stati)
+  return res
+})
+
 // ── SF-001 Eventi ─────────────────────────────────────────────────────────────
 
 export interface GetEventiParams {
