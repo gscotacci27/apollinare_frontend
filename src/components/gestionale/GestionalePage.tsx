@@ -16,6 +16,8 @@ export const GestionalePage = () => {
   // Tutti i parametri in URL → sopravvivono alla navigazione avanti/indietro
   const [searchParams, setSearchParams] = useSearchParams()
   const statoFilter   = searchParams.get('stato') ?? undefined
+  // eslint-disable-next-line no-console
+  console.log('[gestionale] render | stato:', statoFilter, '| sort:', searchParams.get('sort'), '| url:', window.location.search)
   const sortOrder     = (searchParams.get('sort')      ?? 'asc') as 'asc' | 'desc'
   const dataDa        = searchParams.get('data_da')    ?? undefined
   const dataA         = searchParams.get('data_a')     ?? undefined

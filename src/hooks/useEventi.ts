@@ -11,5 +11,5 @@ export const useEventi = (filters: GetEventiParams = {}) =>
   useQuery({
     queryKey: queryKeys.eventi.list(filters),
     queryFn: () => getEventi(filters),
-    staleTime: 60_000,
+    staleTime: 0,
   })
