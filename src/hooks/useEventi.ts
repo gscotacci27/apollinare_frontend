@@ -17,7 +17,7 @@ export const useEventi = (filters: GetEventiParams = {}) => {
 
   return {
     data: query.data ?? [],
-    isLoading: query.isLoading,
+    isLoading: query.isLoading || query.isFetching,
     isError: query.isError,
   }
 }

@@ -55,27 +55,30 @@ export const GestionalePage = () => {
 
   const setParam = (key: string, value: string | undefined) => {
     setSearchParams((p) => {
-      if (value === undefined || value === '') p.delete(key)
-      else p.set(key, value)
-      return p
+      const next = new URLSearchParams(p)
+      if (value === undefined || value === '') next.delete(key)
+      else next.set(key, value)
+      return next
     })
   }
 
   const clearFilters = () => {
     setSearchParams((p) => {
-      p.delete('data_da')
-      p.delete('data_a')
-      p.delete('id_location')
-      p.delete('stato')
-      p.delete('passati')
-      return p
+      const next = new URLSearchParams(p)
+      next.delete('data_da')
+      next.delete('data_a')
+      next.delete('id_location')
+      next.delete('stato')
+      next.delete('passati')
+      return next
     })
   }
 
   const toggleSort = () => {
     setSearchParams((p) => {
-      p.set('sort', sortOrder === 'asc' ? 'desc' : 'asc')
-      return p
+      const next = new URLSearchParams(p)
+      next.set('sort', sortOrder === 'asc' ? 'desc' : 'asc')
+      return next
     })
   }
 
@@ -137,10 +140,11 @@ export const GestionalePage = () => {
             key={String(f.value)}
             onClick={() => {
               setSearchParams((p) => {
-                p.delete('passati')
-                if (f.value !== undefined) p.set('stato', String(f.value))
-                else p.delete('stato')
-                return p
+                const next = new URLSearchParams(p)
+                next.delete('passati')
+                if (f.value !== undefined) next.set('stato', String(f.value))
+                else next.delete('stato')
+                return next
               })
             }}
             className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
@@ -156,9 +160,10 @@ export const GestionalePage = () => {
         <button
           onClick={() => {
             setSearchParams((p) => {
-              if (isPassati) p.delete('passati')
-              else { p.set('passati', '1'); p.delete('stato') }
-              return p
+              const next = new URLSearchParams(p)
+              if (isPassati) next.delete('passati')
+              else { next.set('passati', '1'); next.delete('stato') }
+              return next
             })
           }}
           className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
