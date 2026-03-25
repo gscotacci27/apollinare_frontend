@@ -39,6 +39,7 @@ interface PreventivoCardProps {
 }
 
 const PreventivoCard = ({ prev, idEvento, onDirty, onScontoChange, onTotaleChange }: PreventivoCardProps) => {
+  const qc = useQueryClient()
   const [editSconto, setEditSconto] = useState(false)
   const [scontoVal, setScontoVal]   = useState(prev.sconto_totale)
   const [editTotale, setEditTotale] = useState(false)
@@ -47,12 +48,22 @@ const PreventivoCard = ({ prev, idEvento, onDirty, onScontoChange, onTotaleChang
 
   const { mutate: doSconto } = useMutation({
     mutationFn: (v: number) => updateSconto(idEvento, v),
-    onSuccess: (_d, v) => { onScontoChange(v); onDirty(); setEditSconto(false) },
+    onSuccess: async (_d, v) => {
+      onScontoChange(v)
+      onDirty()
+      setEditSconto(false)
+      await qc.invalidateQueries({ queryKey: queryKeys.scheda.byEvento(idEvento) })
+    },
     onError: () => toast.error('Errore salvataggio sconto'),
   })
   const { mutate: doTotale } = useMutation({
     mutationFn: (v: number | null) => updateTotaleManuale(idEvento, v),
-    onSuccess: (_d, v) => { onTotaleChange(v); onDirty(); setEditTotale(false) },
+    onSuccess: async (_d, v) => {
+      onTotaleChange(v)
+      onDirty()
+      setEditTotale(false)
+      await qc.invalidateQueries({ queryKey: queryKeys.scheda.byEvento(idEvento) })
+    },
     onError: () => toast.error('Errore salvataggio totale'),
   })
 
@@ -189,9 +200,13 @@ interface OspitiSectionProps {
 }
 
 const OspitiSection = ({ idEvento, ospiti, onDirty, onUpdate }: OspitiSectionProps) => {
+  const qc = useQueryClient()
   const { mutate: doUpdate } = useMutation({
     mutationFn: ({ codTipo, body }: { codTipo: string; body: Parameters<typeof updateOspite>[2] }) =>
       updateOspite(idEvento, codTipo, body),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: queryKeys.scheda.byEvento(idEvento) })
+    },
     onError: () => toast.error('Errore aggiornamento ospite'),
   })
 
@@ -293,6 +308,7 @@ interface ExtraSectionProps {
 }
 
 const ExtraSection = ({ idEvento, extra, onDirty, onAdded, onDeleted }: ExtraSectionProps) => {
+  const qc = useQueryClient()
   const [descr, setDescr] = useState('')
   const [costo, setCosto] = useState(0)
   const [qty, setQty]     = useState(1)
@@ -307,6 +323,7 @@ const ExtraSection = ({ idEvento, extra, onDirty, onAdded, onDeleted }: ExtraSec
       setCosto(0)
       setQty(1)
       setAdding(false)
+      qc.invalidateQueries({ queryKey: queryKeys.scheda.byEvento(idEvento) })
     },
     onError: () => toast.error('Errore aggiunta extra'),
   })
@@ -316,6 +333,7 @@ const ExtraSection = ({ idEvento, extra, onDirty, onAdded, onDeleted }: ExtraSec
     onSuccess: (_data, id) => {
       onDeleted(id)
       onDirty()
+      qc.invalidateQueries({ queryKey: queryKeys.scheda.byEvento(idEvento) })
     },
     onError: () => toast.error('Errore eliminazione extra'),
   })
@@ -426,6 +444,7 @@ interface AccontiSectionProps {
 }
 
 const AccontiSection = ({ idEvento, acconti, onDirty, onAdded, onDeleted }: AccontiSectionProps) => {
+  const qc = useQueryClient()
   const [importo, setImporto]   = useState(0)
   const [data, setData]         = useState('')
   const [descrizione, setDescr] = useState('')
@@ -448,6 +467,7 @@ const AccontiSection = ({ idEvento, acconti, onDirty, onAdded, onDeleted }: Acco
       setDescr('')
       setAConf(false)
       setAdding(false)
+      qc.invalidateQueries({ queryKey: queryKeys.scheda.byEvento(idEvento) })
     },
     onError: () => toast.error('Errore aggiunta acconto'),
   })
@@ -457,6 +477,7 @@ const AccontiSection = ({ idEvento, acconti, onDirty, onAdded, onDeleted }: Acco
     onSuccess: (_data, id) => {
       onDeleted(id)
       onDirty()
+      qc.invalidateQueries({ queryKey: queryKeys.scheda.byEvento(idEvento) })
     },
     onError: () => toast.error('Errore eliminazione acconto'),
   })
@@ -586,6 +607,7 @@ interface DegustazioniSectionProps {
 }
 
 const DegustazioniSection = ({ idEvento, degustazioni, onDirty, onAdded, onDeleted }: DegustazioniSectionProps) => {
+  const qc = useQueryClient()
   const [data, setData]     = useState('')
   const [nome, setNome]     = useState('')
   const [nPers, setNPers]   = useState(0)
@@ -602,13 +624,18 @@ const DegustazioniSection = ({ idEvento, degustazioni, onDirty, onAdded, onDelet
     onSuccess: (item) => {
       onAdded(item); onDirty()
       setData(''); setNome(''); setNPers(0); setCosto(0); setDetr(true); setNote(''); setAdding(false)
+      qc.invalidateQueries({ queryKey: queryKeys.scheda.byEvento(idEvento) })
     },
     onError: () => toast.error('Errore aggiunta degustazione'),
   })
 
   const { mutate: doDelete } = useMutation({
     mutationFn: (id: number) => deleteDegustazione(idEvento, id),
-    onSuccess: (_d, id) => { onDeleted(id); onDirty() },
+    onSuccess: (_d, id) => {
+      onDeleted(id)
+      onDirty()
+      qc.invalidateQueries({ queryKey: queryKeys.scheda.byEvento(idEvento) })
+    },
     onError: () => toast.error('Errore eliminazione degustazione'),
   })
 
@@ -739,7 +766,9 @@ export const SchedaEventoPage = () => {
   })
 
   // Merge server data with local optimistic state
-  const displayScheda = localScheda ?? scheda
+  const displayScheda = localScheda && scheda
+    ? { ...localScheda, preventivo: scheda.preventivo }
+    : (localScheda ?? scheda)
 
   const markDirty = useCallback(() => setIsDirty(true), [])
 
@@ -747,7 +776,7 @@ export const SchedaEventoPage = () => {
     (codTipo: string, partial: Partial<{ numero: number; costo: number; sconto: number; note: string | null }>) => {
       setLocalScheda((prev) => {
         const base = prev ?? scheda
-        if (!base) return prev
+      if (!base) return prev
         return {
           ...base,
           ospiti: base.ospiti.map((o) =>
